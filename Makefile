@@ -12,7 +12,7 @@ TEST_TARGETS := $(BUILD_DIR)/test-game $(BUILD_DIR)/test-board $(BUILD_DIR)/test
 NCURSES_CFLAGS = $(shell $(PKG_CONFIG) --cflags ncurses)
 NCURSES_LIBS = $(shell $(PKG_CONFIG) --libs ncurses)
 
-.PHONY: all run debug test clean check-ncurses
+.PHONY: all run debug test test-terminal clean check-ncurses
 all: $(TARGET)
 
 check-ncurses:
@@ -29,6 +29,12 @@ $(TARGET): $(OBJECTS) | check-ncurses
 
 $(BUILD_DIR)/test-%: tests/test_%.c $(CORE_SOURCES) $(wildcard include/*.h) | $(BUILD_DIR)
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) $< $(CORE_SOURCES) $(LDLIBS) -o $@
+
+$(BUILD_DIR)/test-terminal: tests/test_terminal.c src/display.c src/input.c $(CORE_SOURCES) $(wildcard include/*.h) | $(BUILD_DIR) check-ncurses
+	$(CC) $(CPPFLAGS) $(NCURSES_CFLAGS) $(CFLAGS) $(LDFLAGS) tests/test_terminal.c src/display.c src/input.c $(CORE_SOURCES) $(NCURSES_LIBS) $(LDLIBS) -o $@
+
+test-terminal: $(TARGET) $(BUILD_DIR)/test-terminal
+	python3 tests/test_terminal.py
 
 run: $(TARGET)
 	./$(TARGET)

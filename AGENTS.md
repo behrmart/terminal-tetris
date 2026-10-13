@@ -2,16 +2,16 @@
 
 ## Scope and architecture
 This is a native Ubuntu Linux terminal game using C11, GCC, GNU Make and
-ncurses. Milestone 4 includes deterministic movement, gravity, line clearing,
-scoring, levels, pause and restart in the engine. The terminal still shows
-an empty field. Do not add terminal gameplay integration until requested.
+ncurses. Milestone 5 connects the engine to keyboard input, monotonic timing,
+colored rendering, preview and status display. Preserve the engine/terminal
+boundary and the portable ASCII borders used for PuTTY compatibility.
 
 - board: locked 10-column by 20-row storage, placement checks, atomic locking and row compaction.
 - tetromino: seven piece types and four read-only clockwise rotation states.
 - game: deterministic state, actions and elapsed-time updates.
 - input: translate ncurses input into actions.
 - display: terminal lifecycle and read-only rendering.
-- main: application lifecycle, input dispatch and future OS time measurement.
+- main: lifecycle, input dispatch, monotonic time and resize freezing.
 
 The engine (board, tetromino, game) must never include ncurses, keyboard,
 clock or other OS APIs. Keep terminal types out of public headers.
@@ -43,7 +43,8 @@ must leave the board unchanged. Rotation tables do not perform wall kicks.
 Cap elapsed time to GAME_MAX_ELAPSED_MS (100 ms) per update and discard excess, without accumulating a backlog.
 Ignore elapsed time while paused and clear the gravity accumulator on
 pause/resume. The host must reset its clock baseline on resume, restart
-and recovery from an undersized terminal when integrated in Milestone 5.
+and recovery from an undersized terminal. While undersized, accept only
+quit, clear fractional gravity time and preserve the current game status.
 Each update performs at most one downward attempt; spawning discards any
 remaining gravity time. Engine updates must never read clocks.
 Keep quit and terminal resizing in the host.
@@ -62,14 +63,30 @@ Ubuntu packages: build-essential, pkg-config, libncurses-dev, gdb, git.
 Compile with GCC and:
 -std=c11 -Wall -Wextra -Wpedantic -Wconversion -g
 Discover ncurses compiler/linker flags through pkg-config.
-Required targets: all, run, debug, test, clean.
+Required targets: all, run, debug, test, clean. The additional test-terminal
+target uses Python 3 (standard library only) and Linux pseudo-terminals.
 The game engine must compile and test without linking ncurses.
 
 ## Verification
 Run make clean && make and fix all warnings, then run make test.
+For terminal changes also run make test-terminal. It checks screen contents,
+input mapping, resize recovery and terminal restoration under PTYs.
+Keep make test independent of ncurses and Python.
 For terminal changes, verify Q/q exit, interruption cleanup, normal and
 undersized terminals, and resize recovery in a real terminal or PTY.
 Report unavailable tooling and unexecuted checks honestly.
 Gameplay tests must cover collisions, rotations, line compaction,
 deterministic generation, pause behavior and bounded elapsed-time handling.
 Do not compare whole structs with memcmp because of padding.
+
+## Terminal behavior
+Minimum size: 54 columns by 26 rows. Render two columns per cell, using
+colored backgrounds where supported and [] in monochrome. Display is
+read-only. Use arrows for movement (Up rotates clockwise), X/Z for rotations,
+Space for hard drop, P for pause, R for restart and Q for quit (both cases).
+Use POSIX CLOCK_MONOTONIC only in main; timestamp differences are capped
+before converting to engine milliseconds. Advance gravity before ordinary
+actions; pause/restart discard that loop's elapsed time. New launches seed
+from monotonic milliseconds; restart reuses the launch seed.
+SIGINT/SIGTERM/SIGHUP handlers only set a flag. Restore terminal settings
+before printing clock errors or returning from the application.

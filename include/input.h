@@ -3,7 +3,10 @@
 
 #include "game.h"
 
-/* Poll after display_init succeeds. Only Q/q is bound in Milestone 1. */
+/* Poll after display_init succeeds. Waits at most the display's input timeout
+ * for an initial key. ncurses decodes arrow sequences; resize/unknown keys
+ * and timeout return ACTION_NONE.
+ */
 Action input_poll(void);
 
 #endif
