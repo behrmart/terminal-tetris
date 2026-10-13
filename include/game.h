@@ -34,19 +34,26 @@ typedef struct {
     unsigned int bag_index;
 } Game;
 
-/* Preconditions: game points to a valid Game.
- * Same initial seed, actions and elapsed updates must produce the same state.
+/* Initialize before other game calls; callers must preserve engine invariants.
+ * All seeds (including zero) are valid. Initialization spawns an active piece
+ * and draws a next piece from per-game shuffled seven-piece bags.
+ * Same initial seed, actions and elapsed updates produce the same state.
  */
 void game_init(Game *game, uint32_t seed);
 
-/* Engine actions are separate from time updates. ACTION_QUIT is host-owned.
- * Milestone 1: all actions are intentionally no-ops.
+/* Move left/right or rotate if the candidate fits (no wall kicks).
+ * Soft drop moves one row, or locks immediately when blocked.
+ * Hard drop lands and locks one piece. Locking advances next and spawns;
+ * a blocked spawn sets GAME_OVER and clears has_active_piece.
+ * Actions are ignored unless running with an active piece. None, quit,
+ * pause, restart and unknown actions are no-ops in Milestone 3.
+ * Quit remains host-owned; pause/restart will arrive in Milestone 4.
  */
 void game_process_action(Game *game, Action action);
 
 /* Caller supplies elapsed milliseconds; the engine never reads a clock.
  * Future gravity must cap each update to GAME_MAX_ELAPSED_MS, discard excess
- * elapsed time, and ignore time while paused. Milestone 1 is a no-op.
+ * elapsed time, and ignore time while paused. Milestone 3 is still a no-op.
  */
 void game_update(Game *game, unsigned int elapsed_ms);
 

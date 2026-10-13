@@ -2,9 +2,10 @@
 
 ## Scope and architecture
 This is a native Ubuntu Linux terminal game using C11, GCC, GNU Make and
-ncurses. Milestone 2 adds shape tables, placement validation and piece
-locking to the engine. The terminal still shows an empty field. Do not add
-movement, spawning, physics or line clearing until explicitly requested.
+ncurses. Milestone 3 adds deterministic bags, spawning, movement, rotation,
+manual drops and game-over transitions to the engine. The terminal still
+shows an empty field. Do not add gravity, scoring, line clearing, pause,
+restart or terminal gameplay integration until explicitly requested.
 
 - board: locked 10-column by 20-row storage, placement checks and atomic locking.
 - tetromino: seven piece types and four read-only clockwise rotation states.
@@ -22,7 +23,14 @@ abstractions. The active piece remains separate from locked board cells.
 Keep game_process_action and game_update separate. Initialization accepts
 an explicit seed. Equivalent seeds, actions and elapsed updates must yield
 equivalent game state. Do not use global random state.
-Action/update functions remain deliberately inert through Milestone 2.
+Actions now implement movement, rotation and manual drops. game_update stays
+inert until gravity is authorized. None/quit/pause/restart/unknown actions
+are no-ops for now. All actions are ignored when not running.
+Use an explicit fixed-width per-game PRNG and shuffled seven-piece bags.
+Every seed, including zero, must work. Spawn at rotation 0, origin (3, 0).
+Soft drop locks on a blocked downward attempt; hard drop locks exactly one
+piece. Advance the preview on spawn. Blocked spawn means game over with no
+active piece. Keep actions bounded and commit only valid candidate moves.
 Shape queries reject invalid types and rotation indices (valid: 0..3).
 Only occupied cells constrain placement; empty local margins may lie outside
 the board. Occupied cells above the visible board are rejected. Failed locks
