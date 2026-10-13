@@ -54,19 +54,20 @@ void display_render(const Game *game)
         (void)attron(COLOR_PAIR(1));
     }
     (void)mvaddstr(top, left, "TERMINAL TETRIS");
-    (void)mvaddch(top + 2, left, ACS_ULCORNER);
-    (void)mvhline(top + 2, left + 1, ACS_HLINE, BOARD_WIDTH * 2);
-    (void)mvaddch(top + 2, right, ACS_URCORNER);
+    /* ASCII borders avoid alternate-character-set mismatches over SSH. */
+    (void)mvaddch(top + 2, left, '+');
+    (void)mvhline(top + 2, left + 1, '-', BOARD_WIDTH * 2);
+    (void)mvaddch(top + 2, right, '+');
     for (int y = 0; y < BOARD_HEIGHT; ++y) {
-        (void)mvaddch(top + 3 + y, left, ACS_VLINE);
+        (void)mvaddch(top + 3 + y, left, '|');
         for (int x = 0; x < BOARD_WIDTH; ++x) {
             (void)mvaddstr(top + 3 + y, left + 1 + x * 2, "  ");
         }
-        (void)mvaddch(top + 3 + y, right, ACS_VLINE);
+        (void)mvaddch(top + 3 + y, right, '|');
     }
-    (void)mvaddch(bottom, left, ACS_LLCORNER);
-    (void)mvhline(bottom, left + 1, ACS_HLINE, BOARD_WIDTH * 2);
-    (void)mvaddch(bottom, right, ACS_LRCORNER);
+    (void)mvaddch(bottom, left, '+');
+    (void)mvhline(bottom, left + 1, '-', BOARD_WIDTH * 2);
+    (void)mvaddch(bottom, right, '+');
     if (colors_enabled) {
         (void)attroff(COLOR_PAIR(1));
     }

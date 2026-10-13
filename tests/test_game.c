@@ -45,6 +45,6 @@ int main(void)
             assert(game.board.cells[y][x] == CELL_EMPTY);
         }
     }
-    (void)puts("Milestone 1 structure tests passed.");
+    (void)puts("Game initialization tests passed.");
     return 0;
 }

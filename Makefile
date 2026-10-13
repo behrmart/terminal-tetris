@@ -8,7 +8,7 @@ TARGET := $(BUILD_DIR)/terminal-tetris
 CORE_SOURCES := src/board.c src/tetromino.c src/game.c
 SOURCES := src/main.c $(CORE_SOURCES) src/input.c src/display.c
 OBJECTS := $(SOURCES:src/%.c=$(BUILD_DIR)/%.o)
-TEST_TARGET := $(BUILD_DIR)/test-game
+TEST_TARGETS := $(BUILD_DIR)/test-game $(BUILD_DIR)/test-board $(BUILD_DIR)/test-tetromino
 NCURSES_CFLAGS = $(shell $(PKG_CONFIG) --cflags ncurses)
 NCURSES_LIBS = $(shell $(PKG_CONFIG) --libs ncurses)
 
@@ -27,8 +27,8 @@ $(BUILD_DIR)/%.o: src/%.c | $(BUILD_DIR) check-ncurses
 $(TARGET): $(OBJECTS) | check-ncurses
 	$(CC) $(LDFLAGS) $(OBJECTS) $(NCURSES_LIBS) $(LDLIBS) -o $@
 
-$(TEST_TARGET): tests/test_game.c $(CORE_SOURCES) $(wildcard include/*.h) | $(BUILD_DIR)
-	$(CC) $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) tests/test_game.c $(CORE_SOURCES) $(LDLIBS) -o $@
+$(BUILD_DIR)/test-%: tests/test_%.c $(CORE_SOURCES) $(wildcard include/*.h) | $(BUILD_DIR)
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) $< $(CORE_SOURCES) $(LDLIBS) -o $@
 
 run: $(TARGET)
 	./$(TARGET)
@@ -36,8 +36,8 @@ run: $(TARGET)
 debug: $(TARGET)
 	gdb --args ./$(TARGET)
 
-test: $(TEST_TARGET)
-	./$(TEST_TARGET)
+test: $(TEST_TARGETS)
+	@set -e; for test_bin in $(TEST_TARGETS); do ./$$test_bin; done
 
 clean:
 	rm -rf $(BUILD_DIR)

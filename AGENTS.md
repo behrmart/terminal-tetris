@@ -2,11 +2,12 @@
 
 ## Scope and architecture
 This is a native Ubuntu Linux terminal game using C11, GCC, GNU Make and
-ncurses. Milestone 1 is an empty terminal field only. Do not add gameplay
-until explicitly requested.
+ncurses. Milestone 2 adds shape tables, placement validation and piece
+locking to the engine. The terminal still shows an empty field. Do not add
+movement, spawning, physics or line clearing until explicitly requested.
 
-- board: locked 10-column by 20-row cell storage and future board operations.
-- tetromino: piece types and future rotation tables.
+- board: locked 10-column by 20-row storage, placement checks and atomic locking.
+- tetromino: seven piece types and four read-only clockwise rotation states.
 - game: deterministic state, actions and elapsed-time updates.
 - input: translate ncurses input into actions.
 - display: terminal lifecycle and read-only rendering.
@@ -21,7 +22,11 @@ abstractions. The active piece remains separate from locked board cells.
 Keep game_process_action and game_update separate. Initialization accepts
 an explicit seed. Equivalent seeds, actions and elapsed updates must yield
 equivalent game state. Do not use global random state.
-Milestone 1 action/update functions are deliberately inert.
+Action/update functions remain deliberately inert through Milestone 2.
+Shape queries reject invalid types and rotation indices (valid: 0..3).
+Only occupied cells constrain placement; empty local margins may lie outside
+the board. Occupied cells above the visible board are rejected. Failed locks
+must leave the board unchanged. Rotation tables do not perform wall kicks.
 
 When gravity is implemented, cap elapsed time to GAME_MAX_ELAPSED_MS
 (100 ms) per update and discard excess, without accumulating a backlog.
