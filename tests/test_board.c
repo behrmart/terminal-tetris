@@ -145,11 +145,48 @@ static void test_invalid_inputs(void)
     assert(!board_lock_piece(NULL, &piece));
 }
 
+static void test_line_clearing(void)
+{
+    static const unsigned long masks[] = {
+        0UL, 1UL, 1UL << 19, 3UL << 18,
+        (1UL << 4) | (1UL << 10) | (1UL << 19), (1UL << 20) - 1UL
+    };
+    for (unsigned int test = 0U; test < 6U; ++test) {
+        Board board;
+        Board expected;
+        board_init(&board);
+        board_init(&expected);
+        unsigned int count = 0U;
+        for (int y = 0; y < BOARD_HEIGHT; ++y) {
+            if ((masks[test] & (1UL << y)) != 0UL) {
+                ++count;
+                for (int x = 0; x < BOARD_WIDTH; ++x) {
+                    board.cells[y][x] = CELL_I;
+                }
+            } else {
+                board.cells[y][0] = (Cell)(1 + y % 7);
+                int cleared_below = 0;
+                for (int row = y + 1; row < BOARD_HEIGHT; ++row) {
+                    if ((masks[test] & (1UL << row)) != 0UL) {
+                        ++cleared_below;
+                    }
+                }
+                expected.cells[y + cleared_below][0] = board.cells[y][0];
+            }
+        }
+        assert(board_clear_lines(&board) == count);
+        assert_same_board(&board, &expected);
+        assert(board_clear_lines(&board) == 0U);
+        assert_same_board(&board, &expected);
+    }
+}
+
 int main(void)
 {
+    test_line_clearing();
     test_boundaries();
     test_lock_and_overlap();
     test_invalid_inputs();
-    (void)puts("Board tests passed (bounds, collision, atomic locking).");
+    (void)puts("Board tests passed (bounds, collision, atomic locking, line clearing).");
     return 0;
 }

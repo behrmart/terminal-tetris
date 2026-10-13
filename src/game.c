@@ -1,5 +1,7 @@
 #include "game.h"
 
+#include <limits.h>
+
 /* Fixed-width LCG: reproducible on every target, including seed zero.
  * The wide intermediate makes the intended modulo-2^32 conversion explicit.
  * This is a game generator, not a cryptographic generator.
@@ -74,6 +76,16 @@ static void lock_and_spawn(Game *game)
         game->status = GAME_OVER;
         return;
     }
+    const unsigned int cleared = board_clear_lines(&game->board);
+    /* Valid play clears at most four rows per lock. */
+    static const unsigned int points[] = {0U, 100U, 300U, 500U, 800U};
+    const unsigned int scoring_lines = cleared > 4U ? 4U : cleared;
+    const uint64_t award = (uint64_t)points[scoring_lines] * game->level;
+    game->score = award > UINT64_MAX - game->score ?
+                  UINT64_MAX : game->score + award;
+    game->lines = cleared > UINT_MAX - game->lines ?
+                  UINT_MAX : game->lines + cleared;
+    game->level = game->lines / 10U + 1U;
     spawn_piece(game);
 }
 
@@ -83,6 +95,7 @@ void game_init(Game *game, uint32_t seed)
     board_init(&game->board);
     game->level = 1U;
     game->status = GAME_RUNNING;
+    game->initial_seed = seed;
     game->random_state = seed;
     game->bag_index = (unsigned int)TETROMINO_COUNT;
     game->next = draw_piece(game);
@@ -91,6 +104,17 @@ void game_init(Game *game, uint32_t seed)
 
 void game_process_action(Game *game, Action action)
 {
+    if (action == ACTION_RESTART) {
+        game_init(game, game->initial_seed);
+        return;
+    }
+    if (action == ACTION_PAUSE) {
+        if (game->status == GAME_RUNNING || game->status == GAME_PAUSED) {
+            game->status = game->status == GAME_RUNNING ? GAME_PAUSED : GAME_RUNNING;
+            game->gravity_elapsed_ms = 0U;
+        }
+        return;
+    }
     if (game->status != GAME_RUNNING || !game->has_active_piece) {
         return;
     }
@@ -122,14 +146,32 @@ void game_process_action(Game *game, Action action)
         lock_and_spawn(game);
         break;
     default:
-        /* None/quit, reserved pause/restart and unknown actions are no-ops. */
+        /* None/quit and unknown actions are no-ops. */
         break;
     }
 }
 
+unsigned int game_gravity_interval_ms(const Game *game)
+{
+    if (game->level >= 10U) {
+        return 100U;
+    }
+    return 1000U - (game->level - 1U) * 100U;
+}
+
 void game_update(Game *game, unsigned int elapsed_ms)
 {
-    /* Automatic gravity is a later milestone. Never accumulate a backlog. */
-    (void)game;
-    (void)elapsed_ms;
+    if (game->status != GAME_RUNNING || !game->has_active_piece) {
+        return;
+    }
+    const unsigned int accepted = elapsed_ms > (unsigned int)GAME_MAX_ELAPSED_MS ?
+                                  (unsigned int)GAME_MAX_ELAPSED_MS : elapsed_ms;
+    game->gravity_elapsed_ms += accepted;
+    const unsigned int interval = game_gravity_interval_ms(game);
+    if (game->gravity_elapsed_ms >= interval) {
+        game->gravity_elapsed_ms -= interval;
+        if (!try_move(game, 0, 1)) {
+            lock_and_spawn(game);
+        }
+    }
 }

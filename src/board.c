@@ -55,3 +55,32 @@ bool board_lock_piece(Board *board, const Piece *piece)
     }
     return true;
 }
+
+unsigned int board_clear_lines(Board *board)
+{
+    int destination = BOARD_HEIGHT - 1;
+    unsigned int cleared = 0U;
+    for (int source = BOARD_HEIGHT - 1; source >= 0; --source) {
+        bool full = true;
+        for (int x = 0; x < BOARD_WIDTH; ++x) {
+            if (board->cells[source][x] == CELL_EMPTY) {
+                full = false;
+                break;
+            }
+        }
+        if (full) {
+            ++cleared;
+        } else {
+            for (int x = 0; x < BOARD_WIDTH; ++x) {
+                board->cells[destination][x] = board->cells[source][x];
+            }
+            --destination;
+        }
+    }
+    for (int y = destination; y >= 0; --y) {
+        for (int x = 0; x < BOARD_WIDTH; ++x) {
+            board->cells[y][x] = CELL_EMPTY;
+        }
+    }
+    return cleared;
+}

@@ -2,12 +2,11 @@
 
 ## Scope and architecture
 This is a native Ubuntu Linux terminal game using C11, GCC, GNU Make and
-ncurses. Milestone 3 adds deterministic bags, spawning, movement, rotation,
-manual drops and game-over transitions to the engine. The terminal still
-shows an empty field. Do not add gravity, scoring, line clearing, pause,
-restart or terminal gameplay integration until explicitly requested.
+ncurses. Milestone 4 includes deterministic movement, gravity, line clearing,
+scoring, levels, pause and restart in the engine. The terminal still shows
+an empty field. Do not add terminal gameplay integration until requested.
 
-- board: locked 10-column by 20-row storage, placement checks and atomic locking.
+- board: locked 10-column by 20-row storage, placement checks, atomic locking and row compaction.
 - tetromino: seven piece types and four read-only clockwise rotation states.
 - game: deterministic state, actions and elapsed-time updates.
 - input: translate ncurses input into actions.
@@ -23,9 +22,14 @@ abstractions. The active piece remains separate from locked board cells.
 Keep game_process_action and game_update separate. Initialization accepts
 an explicit seed. Equivalent seeds, actions and elapsed updates must yield
 equivalent game state. Do not use global random state.
-Actions now implement movement, rotation and manual drops. game_update stays
-inert until gravity is authorized. None/quit/pause/restart/unknown actions
-are no-ops for now. All actions are ignored when not running.
+Actions implement movement, drops, pause and restart; elapsed updates apply
+gravity. Pause toggles running/paused and clears the accumulator. Restart
+works from every status and reinitializes with the original seed. Other
+actions are ignored unless running; none/quit/unknown actions are no-ops.
+Clear lines after locking and before spawning. Award 100/300/500/800 times
+the pre-clear level for 1/2/3/4 lines. No drop points. Start at level 1 and
+increase every 10 total lines. Saturate score and line counters on overflow.
+Gravity is 1000 ms at level 1, minus 100 ms per level, with a 100 ms floor.
 Use an explicit fixed-width per-game PRNG and shuffled seven-piece bags.
 Every seed, including zero, must work. Spawn at rotation 0, origin (3, 0).
 Soft drop locks on a blocked downward attempt; hard drop locks exactly one
@@ -36,11 +40,12 @@ Only occupied cells constrain placement; empty local margins may lie outside
 the board. Occupied cells above the visible board are rejected. Failed locks
 must leave the board unchanged. Rotation tables do not perform wall kicks.
 
-When gravity is implemented, cap elapsed time to GAME_MAX_ELAPSED_MS
-(100 ms) per update and discard excess, without accumulating a backlog.
+Cap elapsed time to GAME_MAX_ELAPSED_MS (100 ms) per update and discard excess, without accumulating a backlog.
 Ignore elapsed time while paused and clear the gravity accumulator on
 pause/resume. The host must reset its clock baseline on resume, restart
-and recovery from an undersized terminal. Bound work per update.
+and recovery from an undersized terminal when integrated in Milestone 5.
+Each update performs at most one downward attempt; spawning discards any
+remaining gravity time. Engine updates must never read clocks.
 Keep quit and terminal resizing in the host.
 
 ## Coding conventions
@@ -65,6 +70,6 @@ Run make clean && make and fix all warnings, then run make test.
 For terminal changes, verify Q/q exit, interruption cleanup, normal and
 undersized terminals, and resize recovery in a real terminal or PTY.
 Report unavailable tooling and unexecuted checks honestly.
-Future gameplay tests should cover collisions, rotations, line compaction,
+Gameplay tests must cover collisions, rotations, line compaction,
 deterministic generation, pause behavior and bounded elapsed-time handling.
 Do not compare whole structs with memcmp because of padding.

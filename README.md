@@ -1,11 +1,10 @@
 # Terminal Tetris
 
 A native Ubuntu Linux terminal Tetris project, written in ISO C11 with
-ncurses. **Milestone 3:** the engine now supports seeded seven-piece bags,
-spawning, movement, rotation, soft/hard drops and game-over transitions.
+ncurses. **Milestone 4:** the engine supports seeded seven-piece bags,
+movement, gravity, line clearing, scoring, levels, pause and restart.
 The terminal still displays an empty 10 x 20 field and accepts Q only;
 interactive gameplay and preview rendering are not wired up yet.
-Gravity, scoring, line clearing, pause and restart remain unimplemented.
 
 ## Build and run
 
@@ -46,26 +45,26 @@ generated automatically for application objects.
 ## Layout and API
 
 - include/: module interfaces and fixed-size data structures.
-- src/board.c: board initialization, placement validation and atomic locking.
+- src/board.c: board initialization, placement validation, locking and line compaction.
 - src/tetromino.c: read-only shape tables and validated offset queries.
-- src/game.c: deterministic piece generation, actions, locking and spawning.
+- src/game.c: deterministic gameplay, gravity, scoring and state transitions.
 - src/input.c: terminal key translation.
 - src/display.c: ncurses initialization, rendering and cleanup.
 - src/main.c: lifecycle and shutdown signals.
-- tests/test_game.c: bags, movement, rotations, drops, game over and replay.
+- tests/test_game.c: bags, movement, gravity, scoring, pause, restart and replay.
 - tests/test_tetromino.c: silhouettes, clockwise rotation and invalid queries.
-- tests/test_board.c: boundaries, overlaps, identities and failed-lock atomicity.
+- tests/test_board.c: boundaries, overlaps, locking and line compaction.
 - AGENTS.md: contributor architecture, conventions and verification rules.
 
 The engine accepts game_process_action(game, action) separately from
 game_update(game, elapsed_ms). Actions implement manual gameplay in the
-engine; elapsed-time updates remain inert until gravity is added.
+engine; elapsed-time updates apply gravity.
 Initialization accepts a seed and maintains per-game bag/random state.
 No engine module depends on ncurses, OS clocks or keyboard APIs.
 
-Future timing must cap elapsed updates at 100 ms, discard excessive time,
-ignore paused time, and reset the host clock baseline after resume or
-terminal recovery. The current program has no clock or gravity to catch up.
+Elapsed updates are capped at 100 ms and discard excess time. The engine
+ignores paused time. Milestone 5 must reset the host clock baseline after
+resume, restart and recovery from an undersized terminal.
 
 ## Milestone 2 engine API
 
@@ -82,7 +81,9 @@ wall kicks.
 Empty margins may extend outside the board, but every occupied cell must
 be within the visible 10 x 20 area. There are no hidden spawn rows.
 Extreme origins are rejected before addition to avoid signed overflow.
-Locking does not clear rows or change the supplied piece.
+board_lock_piece does not clear rows or change the supplied piece.
+board_clear_lines removes full rows, preserves the order of surviving rows,
+clears vacated top rows and returns the number removed.
 
 Tests cover all 28 shape states, clockwise wraparound, occupied-cell bounds,
 overlap with each block, harmless blocks in empty shape margins, invalid
@@ -101,24 +102,44 @@ Soft drop moves one row or locks immediately when blocked. Hard drop
 finds the landing position in at most 20 attempts and locks exactly one
 piece. Locking promotes the preview to active and draws the next preview.
 A blocked spawn sets GAME_OVER and has_active_piece to false; subsequent
-actions cannot change that state. Reinitialize via game_init for a new
-game; the restart action is reserved for Milestone 4.
+movement/time updates cannot change that state. ACTION_RESTART starts a
+new game using the original seed, including after game over.
 
-The active piece is never written into the board until it locks. Complete
-rows remain on the board, and score/lines/level remain at 0/0/1. Pause,
-restart, quit, none and unknown actions are currently engine no-ops.
-game_update ignores all elapsed time, so there is no gravity backlog.
+The active piece is never written into the board until it locks.
 
 Tests cover multiple seeds, twenty seven-piece bags per seed, independent
 interleaved games, preview promotion, wall/block collisions, both rotations,
 soft/hard drop locking, blocked spawns and deterministic action replay.
 
-## Next milestones
+## Milestone 4 behavior
 
-4. Gravity, line clearing, scoring, levels, pause and restart.
+- Gravity starts at 1000 ms per row and decreases by 100 ms per level,
+  reaching a minimum of 100 ms at level 10. game_gravity_interval_ms exposes
+  the current interval.
+- game_update accepts at most 100 ms per call and discards excess, even for
+  UINT_MAX elapsed time. At most one downward attempt occurs per call.
+  Fractional time is retained on movement and discarded on locking/spawning.
+- Every lock clears full rows before checking the next spawn. Clearing
+  1/2/3/4 rows earns 100/300/500/800 points times the level before that clear.
+  Soft/hard drops do not award points.
+- Level starts at 1 and increases every 10 total cleared lines. Score and
+  line counters saturate at their type limits rather than wrap.
+- ACTION_PAUSE toggles running/paused and resets fractional gravity time.
+  While paused, movement and elapsed time are ignored. Pause does nothing
+  after game over.
+- ACTION_RESTART works from running, paused or game-over state. It resets
+  the board, score, lines, level, timing and generator to the original seed.
+  To choose a different seed, call game_init explicitly.
+
+Tests include adjacent/separated/top/all-row compaction, each scoring tier,
+level thresholds, gravity timing and stall caps, clearing before spawning,
+pause/resume, restart from all statuses and counter saturation.
+
+## Next milestone
+
 5. Full terminal gameplay, preview and integration checks.
 
-These milestones require separate authorization. No modern Tetris
+Milestone 5 requires separate authorization. No modern Tetris
 Guideline compliance is claimed.
 
 ## Verification status
@@ -159,3 +180,14 @@ Milestone 3 build and tests were verified by the user on Hyrule-2 on
 
 These results supersede the earlier authoring-host verification limitation.
 No terminal rendering or input code was changed for Milestone 3.
+
+Milestone 4 build and tests were verified by the user on Hyrule-2 on
+2026-10-13. The supplied output confirms:
+
+- make clean && make: successful GCC build with all required warning flags,
+  with no compiler warnings or errors.
+- make test: all three suites passed: game (movement, bags, gravity, scoring,
+  pause, restart and replay), board (including line clearing), and tetromino.
+
+These results supersede the earlier authoring-host verification limitation.
+No terminal rendering, input or host clock integration changed in this milestone.

@@ -30,4 +30,9 @@ bool board_can_place(const Board *board, const Piece *piece);
  */
 bool board_lock_piece(Board *board, const Piece *piece);
 
+/* Remove full rows, preserve survivor order, and clear vacated top rows.
+ * board must point to valid storage. Returns the number of removed rows.
+ */
+unsigned int board_clear_lines(Board *board);
+
 #endif
