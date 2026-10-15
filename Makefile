@@ -12,7 +12,7 @@ TEST_TARGETS := $(BUILD_DIR)/test-game $(BUILD_DIR)/test-board $(BUILD_DIR)/test
 NCURSES_CFLAGS = $(shell $(PKG_CONFIG) --cflags ncurses)
 NCURSES_LIBS = $(shell $(PKG_CONFIG) --libs ncurses)
 
-.PHONY: all run debug test test-terminal clean check-ncurses
+.PHONY: all run debug test test-terminal package clean check-ncurses
 all: $(TARGET)
 
 check-ncurses:
@@ -35,6 +35,12 @@ $(BUILD_DIR)/test-terminal: tests/test_terminal.c src/display.c src/input.c $(CO
 
 test-terminal: $(TARGET) $(BUILD_DIR)/test-terminal
 	python3 tests/test_terminal.py
+
+package: $(TARGET) packaging/README.txt
+	install -d $(BUILD_DIR)/package/terminal-tetris
+	install -m 755 $(TARGET) $(BUILD_DIR)/package/terminal-tetris/terminal-tetris
+	install -m 644 packaging/README.txt $(BUILD_DIR)/package/terminal-tetris/README.txt
+	tar -czf $(BUILD_DIR)/terminal-tetris-linux.tar.gz -C $(BUILD_DIR)/package terminal-tetris
 
 run: $(TARGET)
 	./$(TARGET)

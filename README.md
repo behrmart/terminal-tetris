@@ -30,6 +30,29 @@ The first recovery input is discarded; press a key again after the display
 returns. Input polling waits up to 50 ms for an initial key; ncurses also
 waits for the remainder of terminal escape sequences such as arrow keys.
 
+## Run without Make or create a binary package
+
+After building once, launch directly:
+
+    ./build/terminal-tetris
+
+To generate an archive containing the executable and run instructions:
+
+    make package
+
+The output is build/terminal-tetris-linux.tar.gz. Copy it to a compatible
+Linux machine, then extract and run:
+
+    tar -xzf terminal-tetris-linux.tar.gz
+    ./terminal-tetris/terminal-tetris
+
+No build tools are needed to play. The destination needs the same CPU
+architecture and compatible libc, ncurses and terminfo runtime libraries.
+This is a Linux binary archive, not a Windows executable or a static binary.
+See packaging/README.txt for optional installation in ~/.local/bin.
+
+make clean removes the archive along with the other build artifacts.
+
 ## Controls
 
 | Key | Action |
@@ -51,6 +74,7 @@ The sidebar shows the next piece, score, lines, level and game status.
 
 - make / make all: build with GCC, debug symbols and strict warnings.
 - make run: build and launch the program.
+- make package: build a Linux binary archive with run instructions.
 - make debug: build and launch the program under GDB.
 - make test: compile and run game, board and tetromino tests without ncurses.
 - make test-terminal: run ncurses screen/input checks and Linux PTY smoke tests.
