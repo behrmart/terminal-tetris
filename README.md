@@ -5,12 +5,12 @@ ncurses. **Milestone 5:** playable terminal Tetris with colored pieces,
 a next-piece preview, gravity, line clearing, scoring, levels, pause,
 restart and game-over handling.
 
-## Terminal 2048 (Phase 2)
+## Terminal 2048 (Phase 3)
 
-A separate 2048 game is being added alongside Tetris. Phase 2 implements
-board slides, single merges, score gains and move availability for 4x4 and
-6x6 boards. It is not playable yet: game initialization still creates an
-empty board, and game actions are not connected to board moves.
+A separate 2048 game is being added alongside Tetris. Phase 3 adds seeded
+tile spawning, scoring, win/loss handling, continue-after-win and restart
+for both 4x4 and 6x6 boards. The engine is implemented, but the terminal
+interface is still a noninteractive notice; playable controls arrive in Phase 4.
 
     make all
     make test-2048
@@ -25,8 +25,8 @@ After building, it can also be launched with ./build/terminal-2048.
 The isolated modules live in include/game2048 and src/game2048:
 board handles fixed-size storage; game owns score, seed and status;
 input/display are reserved for the future interface; main owns lifecycle.
-tests/test_2048_game.c checks both sizes, initialization, invalid sizes and
-the current no-op game action contract. tests/test_2048_board.c covers slides,
+tests/test_2048_game.c checks both sizes, spawning, score, no-op preservation,
+win/loss, continuation, restart and deterministic replay. tests/test_2048_board.c covers slides,
 merges, bounds, score gains and move availability. Engine tests do not link
 ncurses or Tetris.
 
@@ -35,7 +35,6 @@ retain their Tetris behavior. No 2048 package is provided in this phase.
 
 Remaining 2048 phases:
 
-3. Deterministic spawning, score, win/loss and restart.
 4. Board-size selection and the playable terminal interface.
 5. Integration checks and a separate binary package.
 
@@ -77,7 +76,31 @@ validated or modified; unused storage is preserved.
   returned to the shell without a reported error.
 
 These results supersede the authoring-host verification limitation.
-Phase 3 has not been started.
+Phase 3 engine behavior:
+
+- Initialization places two tiles in distinct empty cells. Spawns choose an
+  empty position uniformly and a value of 2 (90%) or 4 (10%).
+- Each changed move adds its merge points, saturating total score, and spawns
+  exactly one tile. Ineffective moves consume no randomness and change no state.
+- Reaching 2048 or higher pauses at WON. Continue acknowledges the win once;
+  play resumes if moves remain, otherwise the status becomes OVER. Win takes
+  priority when the same move also leaves no legal moves.
+- Restart from any status resets score, board and win acknowledgment and
+  replays the original seed at the same board size.
+- The game engine reads no clocks or keyboard input and has no ncurses dependency.
+
+2048 Phase 3 was verified by the user on Hyrule-2 on 2026-10-19:
+
+- make clean && make: both executables built with no warnings or errors
+  in the supplied output.
+- make test: all three Tetris engine test suites passed.
+- make test-2048: game tests passed for spawning, score, win/loss, continue,
+  restart and replay; board tests passed for both sizes and all directions.
+- make run-2048: the Phase 3 notice reported a 4x4 board initialized with two
+  tiles, and the executable returned to the shell without a reported error.
+
+These results supersede the authoring-host verification limitation.
+Phase 4 has not been started.
 
 ## Build and run
 
@@ -147,7 +170,7 @@ The sidebar shows the next piece, score, lines, level and game status.
 ## Make targets
 
 - make / make all: build both games with GCC, debug symbols and strict warnings.
-- make run-2048: build and launch the noninteractive 2048 Phase 2 notice.
+- make run-2048: build and launch the noninteractive 2048 Phase 3 notice.
 - make test-2048: run isolated 2048 initialization and board tests without ncurses.
 - make run: build and launch the program.
 - make package: build a Linux binary archive with run instructions.

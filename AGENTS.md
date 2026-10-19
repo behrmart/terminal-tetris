@@ -91,7 +91,7 @@ from monotonic milliseconds; restart reuses the launch seed.
 SIGINT/SIGTERM/SIGHUP handlers only set a flag. Restore terminal settings
 before printing clock errors or returning from the application.
 
-## 2048 Phase 2 scope
+## 2048 Phase 3 scope
 The repository also contains a separate Terminal 2048 skeleton under
 include/game2048 and src/game2048. The rules above about Tetris gravity,
 tetrominoes, scoring and terminal layout apply only to Tetris.
@@ -112,11 +112,22 @@ saturate the score gain at UINT64_MAX. Exponent-63 tiles slide but never merge.
 Reject invalid sizes, directions and active tile exponents before mutation.
 Preserve storage outside the active board. Empty boards have no changing move.
 
-Game initialization still creates empty boards; action/input stubs remain
-inert. The executable prints a noninteractive notice and exits. Do not add
-spawning, game-state action integration, win/loss transitions or the ncurses
-interface until their phases are requested. 2048 board tests must cover both
-sizes, all directions, merge ordering, blocked moves, limits and score gains.
+Phase 3 initializes two distinct random tiles and connects game actions to
+board moves. Use a fixed-width per-game PRNG; all seeds including zero work.
+Select empty positions uniformly; spawn 2 with 90% probability and 4 with
+10%. Use rejection sampling to avoid modulo bias. A changed move adds merge
+points with saturation and spawns exactly one tile. Ineffective moves leave
+the entire state unchanged, including PRNG state.
+
+Check for an unacknowledged tile >=2048 before loss detection. WON freezes
+movement until CONTINUE, which acknowledges once and either resumes or
+sets OVER if no moves remain. Restart works from any status, retaining
+size and original seed. None/quit/unknown actions are inert; quit is host-owned.
+
+Input remains a stub; the executable prints a noninteractive notice and
+exits. Do not add the playable ncurses interface until Phase 4 is requested.
+Tests must cover both sizes, seeds, one-tile spawning, no-op preservation,
+score saturation, win/loss priority, continue, restart and replay.
 
 make all builds both executables. Existing run/debug/test/test-terminal/
 package targets retain their Tetris behavior. Use run-2048 and test-2048
