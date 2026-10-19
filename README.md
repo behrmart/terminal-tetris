@@ -5,6 +5,50 @@ ncurses. **Milestone 5:** playable terminal Tetris with colored pieces,
 a next-piece preview, gravity, line clearing, scoring, levels, pause,
 restart and game-over handling.
 
+## Terminal 2048 (Phase 1)
+
+A separate 2048 game is being added alongside Tetris. Phase 1 provides the
+project skeleton, state structures and initialization for 4x4 and 6x6
+boards. It is not playable yet: boards start empty and actions do nothing.
+
+    make all
+    make test-2048
+    make run-2048
+
+make all builds build/terminal-tetris and build/terminal-2048. The 2048
+executable prints a skeleton notice for a default 4x4 board and exits.
+Board-size selection and the ncurses interface arrive in Phase 4; both
+sizes are already supported by the initialization API and structure tests.
+After building, it can also be launched with ./build/terminal-2048.
+
+The isolated modules live in include/game2048 and src/game2048:
+board handles fixed-size storage; game owns score, seed and status;
+input/display are reserved for the future interface; main owns lifecycle.
+tests/test_2048_game.c checks both sizes, initialization, invalid sizes and
+the Phase 1 no-op action contract. Engine tests do not link ncurses or Tetris.
+
+Existing make run, make debug, make test, make test-terminal and make package
+retain their Tetris behavior. No 2048 package is provided in this phase.
+
+Remaining 2048 phases:
+
+2. Slide/merge mechanics and board tests.
+3. Deterministic spawning, score, win/loss and restart.
+4. Board-size selection and the playable terminal interface.
+5. Integration checks and a separate binary package.
+
+2048 Phase 1 was verified by the user on Hyrule-2 on 2026-10-19:
+
+- make clean && make: both executables built with no warnings or errors
+  in the supplied output.
+- make test: all three Tetris engine test suites passed.
+- make test-2048: structure tests passed for 4x4/6x6 boards, seeds and validation.
+- make run-2048: the expected skeleton notice appeared and the program
+  returned to the shell without a reported error.
+
+These results supersede the authoring-host tooling limitation. Phase 2
+has not been started.
+
 ## Build and run
 
 Install the Ubuntu toolchain:
@@ -72,7 +116,9 @@ The sidebar shows the next piece, score, lines, level and game status.
 
 ## Make targets
 
-- make / make all: build with GCC, debug symbols and strict warnings.
+- make / make all: build both games with GCC, debug symbols and strict warnings.
+- make run-2048: build and launch the noninteractive 2048 Phase 1 notice.
+- make test-2048: run isolated 2048 structure tests without ncurses.
 - make run: build and launch the program.
 - make package: build a Linux binary archive with run instructions.
 - make debug: build and launch the program under GDB.

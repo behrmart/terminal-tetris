@@ -90,3 +90,30 @@ actions; pause/restart discard that loop's elapsed time. New launches seed
 from monotonic milliseconds; restart reuses the launch seed.
 SIGINT/SIGTERM/SIGHUP handlers only set a flag. Restore terminal settings
 before printing clock errors or returning from the application.
+
+## 2048 Phase 1 scope
+The repository also contains a separate Terminal 2048 skeleton under
+include/game2048 and src/game2048. The rules above about Tetris gravity,
+tetrominoes, scoring and terminal layout apply only to Tetris.
+Shared C11 conventions and the engine/terminal dependency boundary apply
+to both games. Do not refactor working Tetris modules for 2048.
+
+2048 board/game modules use only ISO C11 and expose game2048-prefixed APIs.
+Use Game2048-prefixed types, GAME2048 constants and distinct include guards.
+Keep a fixed 6x6 tile array with an active size of 4 or 6. Tiles are
+exponents: 0 is empty, n represents 2^n, with a maximum exponent of 63.
+Invalid initialization must leave state unchanged. Store the explicit
+initial seed and per-game random state. There is no elapsed-time API.
+
+Phase 1 initializes empty boards and provides inert action/input stubs.
+The executable prints a noninteractive notice and exits normally. Do not
+add merging, movement, random tiles or an ncurses interface until their
+phases are requested. Win acknowledgment, overflow behavior and spawning
+are design contracts for subsequent phases, not implemented gameplay.
+
+make all builds both executables. Existing run/debug/test/test-terminal/
+package targets retain their Tetris behavior. Use run-2048 and test-2048
+for the new game. 2048 engine tests must not compile/link Tetris, ncurses
+or OS-specific code. Object files live under build/game2048 to avoid clashes.
+For 2048 changes run make clean && make, make test and make test-2048.
+Run make run-2048 to check skeleton startup and normal exit.

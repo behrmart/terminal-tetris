@@ -9,11 +9,16 @@ CORE_SOURCES := src/board.c src/tetromino.c src/game.c
 SOURCES := src/main.c $(CORE_SOURCES) src/input.c src/display.c
 OBJECTS := $(SOURCES:src/%.c=$(BUILD_DIR)/%.o)
 TEST_TARGETS := $(BUILD_DIR)/test-game $(BUILD_DIR)/test-board $(BUILD_DIR)/test-tetromino
+TARGET_2048 := $(BUILD_DIR)/terminal-2048
+CORE_2048_SOURCES := src/game2048/board.c src/game2048/game.c
+SOURCES_2048 := src/game2048/main.c $(CORE_2048_SOURCES) src/game2048/input.c src/game2048/display.c
+OBJECTS_2048 := $(SOURCES_2048:src/%.c=$(BUILD_DIR)/%.o)
+TEST_2048_TARGET := $(BUILD_DIR)/test-2048-game
 NCURSES_CFLAGS = $(shell $(PKG_CONFIG) --cflags ncurses)
 NCURSES_LIBS = $(shell $(PKG_CONFIG) --libs ncurses)
 
-.PHONY: all run debug test test-terminal package clean check-ncurses
-all: $(TARGET)
+.PHONY: all run debug test test-terminal package clean check-ncurses run-2048 test-2048
+all: $(TARGET) $(TARGET_2048)
 
 check-ncurses:
 	@$(PKG_CONFIG) --exists ncurses || { echo "Install pkg-config and libncurses-dev."; exit 1; }
@@ -42,6 +47,22 @@ package: $(TARGET) packaging/README.txt
 	install -m 644 packaging/README.txt $(BUILD_DIR)/package/terminal-tetris/README.txt
 	tar -czf $(BUILD_DIR)/terminal-tetris-linux.tar.gz -C $(BUILD_DIR)/package terminal-tetris
 
+$(BUILD_DIR)/game2048/%.o: src/game2048/%.c | check-ncurses
+	mkdir -p $(@D)
+	$(CC) $(CPPFLAGS) $(NCURSES_CFLAGS) $(CFLAGS) -MMD -MP -c $< -o $@
+
+$(TARGET_2048): $(OBJECTS_2048) | check-ncurses
+	$(CC) $(LDFLAGS) $(OBJECTS_2048) $(NCURSES_LIBS) $(LDLIBS) -o $@
+
+$(TEST_2048_TARGET): tests/test_2048_game.c $(CORE_2048_SOURCES) $(wildcard include/game2048/*.h) | $(BUILD_DIR)
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) tests/test_2048_game.c $(CORE_2048_SOURCES) $(LDLIBS) -o $@
+
+run-2048: $(TARGET_2048)
+	./$(TARGET_2048)
+
+test-2048: $(TEST_2048_TARGET)
+	./$(TEST_2048_TARGET)
+
 run: $(TARGET)
 	./$(TARGET)
 
@@ -54,4 +75,4 @@ test: $(TEST_TARGETS)
 clean:
 	rm -rf $(BUILD_DIR)
 
--include $(OBJECTS:.o=.d)
+-include $(OBJECTS:.o=.d) $(OBJECTS_2048:.o=.d)
