@@ -1,11 +1,11 @@
-# Terminal Tetris
+# Terminal Games
 
 A native Ubuntu Linux terminal Tetris project, written in ISO C11 with
 ncurses. **Milestone 5:** playable terminal Tetris with colored pieces,
 a next-piece preview, gravity, line clearing, scoring, levels, pause,
 restart and game-over handling.
 
-## Terminal 2048 (Phase 4)
+## Terminal 2048 (Phase 5)
 
 Terminal 2048 now has a playable ncurses interface for 4x4 and 6x6 boards,
 with colored tiles, score, win/loss messages, restart and continued play
@@ -16,9 +16,9 @@ after reaching 2048.
     make test-2048-terminal
     make run-2048
 
-Both games are built independently. You can also launch ./build/terminal-2048
+The launcher links both games; their engine modules remain isolated. You can also launch ./build/terminal-2048
 directly. At startup press 4 for 4x4, 6 for 6x6, or Enter for 4x4. To change
-board size, quit and launch again.
+board size, press M and select 2048 again.
 
 | Key | 2048 action |
 | --- | --- |
@@ -29,7 +29,7 @@ board size, quit and launch again.
 
 Letter keys accept either case. The window must be at least 42x22 for 4x4
 or 51x28 for 6x6 (the menu requires 42x9). Smaller windows show a message,
-accept only quit, and leave the game unchanged. Recovery discards the first
+accept M (main menu) or Q (quit), and otherwise leave the game unchanged. Recovery discards the first
 input; press a key again after the board returns. Tiles that exceed seven
 decimal digits use exact power notation, such as 2^63, to keep cells aligned.
 Colors fall back to plain numeric tiles on monochrome terminals.
@@ -47,12 +47,10 @@ win/loss, continuation, restart and deterministic replay. tests/test_2048_board.
 merges, bounds, score gains and move availability. Engine tests do not link
 ncurses or Tetris.
 
-Existing make run, make debug, make test, make test-terminal and make package
-retain their Tetris behavior. No 2048 package is provided in this phase.
+make run opens the main menu; make run-tetris launches Tetris directly.
+Existing debug, test, test-terminal and package targets retain their Tetris entry points. Use make package-2048 for the separate 2048 archive.
 
-Remaining 2048 phases:
-
-5. Integration checks and a separate binary package.
+Phase 5 adds input/engine/rendering integration checks and a separate binary package.
 
 2048 Phase 1 was verified by the user on Hyrule-2 on 2026-10-19:
 
@@ -116,9 +114,12 @@ Phase 3 engine behavior:
   tiles, and the executable returned to the shell without a reported error.
 
 These results supersede the authoring-host verification limitation.
-Phase 4 implementation is now present. Its Linux build and test execution
-remain pending: Make is unavailable on the Windows authoring host.
-Phase 5 packaging and broader integration verification have not been started.
+Phase 4 was verified by the user's Hyrule-2 output: both binaries built
+without warnings, both engine suites and both terminal suites passed,
+and make run-2048 returned without a reported error.
+Phase 5 adds checks for input-to-screen win/continue/loss/restart transitions,
+SIGHUP cleanup and standalone package execution. Phase 5 Linux execution
+is pending because Make/GCC are unavailable on the Windows authoring host.
 
 ## Build and run
 
@@ -139,7 +140,7 @@ SIGTERM/SIGHUP request orderly shutdown and restoration of terminal settings.
 The display requires at least **54 columns x 26 rows**. Each board cell
 uses two terminal columns. Pieces have colored backgrounds; monochrome
 terminals still show [] blocks. Borders use plain ASCII for PuTTY.
-Smaller terminals freeze gameplay and accept only Q. Enlarging the window
+Smaller terminals freeze gameplay and accept M (main menu) or Q (quit). Enlarging the window
 restores the previous running/paused/game-over state without catching up.
 The first recovery input is discarded; press a key again after the display
 returns. Input polling waits up to 50 ms for an initial key; ncurses also
@@ -187,11 +188,14 @@ The sidebar shows the next piece, score, lines, level and game status.
 
 ## Make targets
 
-- make / make all: build both games with GCC, debug symbols and strict warnings.
+- make / make all: build the launcher and both direct entry points with GCC, debug symbols and strict warnings.
 - make run-2048: build and launch the playable 2048 size selector.
 - make test-2048-terminal: run 2048 screen/input and PTY checks (Python 3).
 - make test-2048: run isolated 2048 initialization and board tests without ncurses.
-- make run: build and launch the program.
+- make run: open the shared main menu.
+- make run-tetris: launch Tetris directly.
+- make test-menu: test switching, resizing and menu cleanup under PTYs.
+- make package-games: package the shared launcher with both games.
 - make package: build a Linux binary archive with run instructions.
 - make debug: build and launch the program under GDB.
 - make test: compile and run game, board and tetromino tests without ncurses.
@@ -387,3 +391,77 @@ Milestone 5 terminal verification was reported by the user on Hyrule-2 on
 A fresh make clean && make and make test result for Milestone 5 was not
 included in this report. The complete manual gameplay checklist and color
 appearance cannot be confirmed from the plain-text capture alone.
+
+## 2048 binary package and final verification
+
+Build and run all engine, terminal and package checks on Ubuntu:
+
+    make clean && make
+    make check
+
+make check includes test, test-2048, test-terminal, test-2048-terminal and
+test-2048-package. Python 3 and Linux PTYs are needed for terminal/package
+tests only; engine tests remain independent of ncurses and Python.
+The package test checks exact archive contents and executable permissions,
+then extracts to a temporary directory and launches both sizes from outside
+the source tree. Terminal tests connect keyboard mappings to engine state
+and rendered win, continue, loss and restart screens under xterm and vt100.
+
+To create just the 2048 archive:
+
+    make package-2048
+
+Output: build/terminal-2048-linux.tar.gz. On a compatible Linux machine:
+
+    tar -xzf terminal-2048-linux.tar.gz
+    ./terminal-2048/terminal-2048
+
+No Make or source tree is needed to play. Use the same CPU architecture
+and compatible libc, ncurses and terminfo runtime libraries. This is a
+dynamically linked Linux archive, not a Windows executable or static binary.
+See packaging/README-2048.txt for optional installation in ~/.local/bin.
+make clean removes both games' build artifacts and archives.
+
+Before distribution, play both sizes in PuTTY: select a board, move in all
+four directions, confirm merges and score changes, restart, resize below
+minimum and recover, then quit. Check color and monochrome readability.
+Automated transition fixtures cover win/continue/loss; PTY checks do not
+replace a full manual playthrough or verify PuTTY's visual appearance.
+No undo, persistent high scores or saved games are implemented.
+
+## Main menu and returning from games
+
+    make run
+    # Or launch directly after building:
+    ./build/terminal-games
+
+Choose 1 for Tetris or 2 for 2048. The 2048 board selector then offers
+4x4 or 6x6. Q quits the entire application from any screen. Press M in
+either game (including paused/game-over states) or in the 2048 board
+selector to return to the main menu. M discards the current session;
+selecting again creates a fresh game. Letters accept either case.
+M/Q work even when undersized. The main menu requires 32x9.
+
+Direct entry points remain ./build/terminal-tetris and ./build/terminal-2048.
+Each executable includes both games so returning to the menu also works
+in an extracted package without sibling files. The executable's basename
+selects its initial screen; renamed copies open the main menu.
+
+src/launcher.c owns process signals and top-level navigation. The existing
+main.c files now provide bounded game sessions declared in include/session.h.
+Each session restores ncurses before returning to the launcher. Navigation
+stays in host/input code; neither engine knows about the menu. Tetris's
+clock baseline is initialized afresh on every session.
+
+Create the shared package with make package-games. Extract and launch:
+
+    tar -xzf build/terminal-games-linux.tar.gz
+    ./terminal-games/terminal-games
+
+Verification for this change: make clean && make, then make check.
+The menu PTY suite covers repeated switching under xterm/vt100, both 2048
+sizes, returning from paused Tetris and the board selector, direct entry
+points, undersized navigation, Q/q and SIGINT/SIGTERM/SIGHUP restoration.
+The extracted 2048 package test also switches into Tetris without siblings.
+Linux execution of these changes remains pending on the authoring host,
+which lacks Make/GCC. Check appearance and switching in PuTTY as well.

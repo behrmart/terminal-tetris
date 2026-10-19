@@ -29,3 +29,9 @@ Optional installation for your user (no sudo):
     "$HOME/.local/bin/terminal-tetris"
 
 If ~/.local/bin is on your PATH, just type terminal-tetris.
+
+M: return to the main menu (both cases), discarding the current game.
+The main menu offers 1: Tetris, 2: 2048, Q: quit. Selecting starts fresh.
+Both games are included in this executable; no sibling executable is needed.
+M is also available when undersized and at the 2048 board selector.
+Q continues to exit the whole application.

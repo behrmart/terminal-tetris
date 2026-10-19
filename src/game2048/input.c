@@ -4,8 +4,10 @@
 
 Game2048Input game2048_input_poll(void)
 {
-    Game2048Input input = {GAME2048_ACTION_NONE, 0U};
+    Game2048Input input = {0};
     switch (getch()) {
+    case 'm':
+    case 'M': input.main_menu = true; break;
     case KEY_LEFT:  input.action = GAME2048_ACTION_LEFT; break;
     case KEY_RIGHT: input.action = GAME2048_ACTION_RIGHT; break;
     case KEY_UP:    input.action = GAME2048_ACTION_UP; break;

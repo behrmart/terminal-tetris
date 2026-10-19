@@ -2,9 +2,12 @@
 
 #include <ncurses.h>
 
-Action input_poll(void)
+Action input_poll_navigation(bool *main_menu)
 {
+    *main_menu = false;
     switch (getch()) {
+    case 'm':
+    case 'M':       *main_menu = true; return ACTION_NONE;
     case KEY_LEFT:  return ACTION_LEFT;
     case KEY_RIGHT: return ACTION_RIGHT;
     case KEY_DOWN:  return ACTION_SOFT_DROP;
@@ -22,4 +25,10 @@ Action input_poll(void)
     case 'Q':       return ACTION_QUIT;
     default:       return ACTION_NONE; /* Includes timeout and KEY_RESIZE. */
     }
+}
+
+Action input_poll(void)
+{
+    bool main_menu = false;
+    return input_poll_navigation(&main_menu);
 }

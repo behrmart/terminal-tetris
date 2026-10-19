@@ -44,7 +44,7 @@ Cap elapsed time to GAME_MAX_ELAPSED_MS (100 ms) per update and discard excess, 
 Ignore elapsed time while paused and clear the gravity accumulator on
 pause/resume. The host must reset its clock baseline on resume, restart
 and recovery from an undersized terminal. While undersized, accept only
-quit, clear fractional gravity time and preserve the current game status.
+M (main menu) or quit, clear fractional gravity time and preserve the current game status.
 Each update performs at most one downward attempt; spawning discards any
 remaining gravity time. Engine updates must never read clocks.
 Keep quit and terminal resizing in the host.
@@ -91,12 +91,12 @@ from monotonic milliseconds; restart reuses the launch seed.
 SIGINT/SIGTERM/SIGHUP handlers only set a flag. Restore terminal settings
 before printing clock errors or returning from the application.
 
-## 2048 Phase 4 scope
+## 2048 Phase 5 scope
 The repository also contains a separate playable Terminal 2048 game under
 include/game2048 and src/game2048. The rules above about Tetris gravity,
 tetrominoes, scoring and terminal layout apply only to Tetris.
 Shared C11 conventions and the engine/terminal dependency boundary apply
-to both games. Do not refactor working Tetris modules for 2048.
+to both games. Preserve Tetris engine behavior when sharing host lifecycle code.
 
 2048 board/game modules use only ISO C11 and expose game2048-prefixed APIs.
 Use Game2048-prefixed types, GAME2048 constants and distinct include guards.
@@ -130,19 +130,40 @@ Numeric selections are ignored after starting a game. Letter controls accept
 both cases. The display reads state only and uses ASCII borders for PuTTY.
 Use seven-column cells; values longer than seven digits use exact 2^n
 notation rather than truncation. Minimum sizes are 42x22 (4x4), 51x28 (6x6)
-and 42x9 (menu). Keep game state unchanged while undersized; accept only quit,
+and 42x9 (menu). Keep game state unchanged while undersized; accept only M (main menu) or quit,
 and discard the first recovery input. There is no gameplay timer.
 Read the monotonic clock in main only to seed a newly selected game.
 Signal handlers only set a flag; normal control flow restores the terminal.
-Do not add 2048 binary packaging until Phase 5 is requested.
+Phase 5 provides package-2048 and test-2048-package; keep Tetris packaging unchanged.
 Tests must cover both sizes, seeds, one-tile spawning, no-op preservation,
 score saturation, win/loss priority, continue, restart and replay.
 
-make all builds both executables. Existing run/debug/test/test-terminal/
-package targets retain their Tetris behavior. Use run-2048 and test-2048
+make all builds terminal-games and both direct entry points. make run opens
+the main menu; run-tetris launches Tetris. Existing debug/test/test-terminal/
+package targets retain their Tetris entry points. Use run-2048 and test-2048
 for the new game. 2048 engine tests must not compile/link Tetris, ncurses
 or OS-specific code. Object files live under build/game2048 to avoid clashes.
 For 2048 changes run make clean && make, make test and make test-2048.
 Run make test-2048-terminal for frontend screen/input and PTY cleanup checks
 (Python 3 standard library). Run make run-2048 for manual gameplay in both sizes.
 Preserve existing Tetris test targets and keep make test-2048 free of ncurses.
+
+Phase 5 verification: make check runs both engine suites, both terminal
+suites and the extracted 2048 package test. Package only the executable and
+packaging/README-2048.txt, preserving executable permissions. The archive
+requires a compatible Linux architecture and runtime libraries; do not claim
+a static or universal executable. Package tests must launch from outside the
+source tree and check terminal restoration for both sizes.
+Keep test-2048 independent of ncurses/Python. Report unexecuted Linux checks.
+
+## Shared main menu
+src/launcher.c owns signals and calls tetris_run/game2048_run via session.h.
+The three executable names share one linked program: terminal-games starts
+at the menu, terminal-tetris/terminal-2048 start at the named game. Do not
+spawn subprocesses or depend on sibling binaries for navigation.
+M/m returns SESSION_MENU after normal terminal cleanup, discarding the game.
+Q/q exits the process. Navigation is host-only, including while undersized;
+engine action enums and state remain independent of menu handling.
+Selecting a game starts fresh with new clock baseline and seed.
+Run make test-menu (included in make check) for navigation changes.
+package-games bundles the shared menu executable and its README.

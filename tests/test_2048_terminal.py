@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Phase 4 frontend checks; reuses the existing Linux PTY test helper."""
+"""Frontend and integration checks; reuses the existing Linux PTY test helper."""
 import signal
 
 from test_terminal import Terminal
@@ -16,7 +16,7 @@ def run_checks():
         print(f"2048 screen/input checks passed ({term}).")
 
     for size in (b"4", b"6"):
-        for exit_action in (b"q", b"Q", signal.SIGINT, signal.SIGTERM):
+        for exit_action in (b"q", b"Q", signal.SIGINT, signal.SIGTERM, signal.SIGHUP):
             terminal = Terminal("terminal-2048", rows=28, columns=54)
             try:
                 terminal.expect(b"Choose your board:")

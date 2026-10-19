@@ -1,6 +1,6 @@
 #define _POSIX_C_SOURCE 200809L
 
-#include <locale.h>
+#include "session.h"
 #include <signal.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -11,13 +11,6 @@
 #include "game.h"
 #include "input.h"
 
-static volatile sig_atomic_t stop_requested = 0;
-
-static void request_stop(int signal_number)
-{
-    (void)signal_number;
-    stop_requested = 1;
-}
 
 static bool monotonic_ms(uint64_t *milliseconds)
 {
@@ -30,22 +23,12 @@ static bool monotonic_ms(uint64_t *milliseconds)
     return true;
 }
 
-int main(void)
+int tetris_run(const volatile sig_atomic_t *stop_requested)
 {
     Game game;
     uint64_t previous = 0U;
     bool clock_failed = false;
-    struct sigaction handler = {0};
-    handler.sa_handler = request_stop;
-
-    (void)setlocale(LC_ALL, "");
-    if (sigemptyset(&handler.sa_mask) != 0 ||
-        sigaction(SIGINT, &handler, NULL) != 0 ||
-        sigaction(SIGTERM, &handler, NULL) != 0 ||
-        sigaction(SIGHUP, &handler, NULL) != 0) {
-        (void)fputs("Could not install exit handlers.\n", stderr);
-        return EXIT_FAILURE;
-    }
+    bool menu_requested = false;
     if (!monotonic_ms(&previous)) {
         (void)fputs("Could not read the monotonic clock.\n", stderr);
         return EXIT_FAILURE;
@@ -63,9 +46,12 @@ int main(void)
     if (!monotonic_ms(&previous)) {
         clock_failed = true;
     }
-    while (!stop_requested && !clock_failed) {
-        const Action action = input_poll();
-        if (action == ACTION_QUIT || stop_requested) {
+    while (!*stop_requested && !clock_failed) {
+        const Action action = input_poll_navigation(&menu_requested);
+        if (action == ACTION_QUIT || *stop_requested) {
+            break;
+        }
+        if (menu_requested) {
             break;
         }
         uint64_t now = 0U;
@@ -100,5 +86,5 @@ int main(void)
         (void)fputs("Could not read the monotonic clock.\n", stderr);
         return EXIT_FAILURE;
     }
-    return EXIT_SUCCESS;
+    return menu_requested ? SESSION_MENU : EXIT_SUCCESS;
 }

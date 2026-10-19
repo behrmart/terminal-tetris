@@ -8,5 +8,7 @@
  * and timeout return ACTION_NONE.
  */
 Action input_poll(void);
+/* Host navigation is separate from engine actions. */
+Action input_poll_navigation(bool *main_menu);
 
 #endif

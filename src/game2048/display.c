@@ -69,7 +69,7 @@ static void draw_small(unsigned int size)
         (void)mvaddnstr(0, 0, message, columns - 1);
     }
     if (rows > 1 && columns > 1) {
-        (void)mvaddnstr(1, 0, "Input suspended. Q: quit", columns - 1);
+        (void)mvaddnstr(1, 0, "M: main menu  Q: quit", columns - 1);
     }
 }
 
@@ -86,7 +86,7 @@ void game2048_display_menu(void)
         (void)attroff(A_BOLD);
         (void)mvaddstr(top + 2, left, "Choose your board:");
         (void)mvaddstr(top + 3, left, "4: 4x4 classic    6: 6x6");
-        (void)mvaddstr(top + 5, left, "Enter: 4x4       Q: quit");
+        (void)mvaddstr(top + 5, left, "Enter: 4x4  M: main menu  Q: quit");
         (void)mvaddstr(top + 7, left, "Join equal tiles to reach 2048.");
     }
     (void)refresh();
@@ -162,7 +162,7 @@ void game2048_display_render(const Game2048 *game)
     (void)attron(A_BOLD);
     (void)mvaddstr(bottom + 1, left, status);
     (void)attroff(A_BOLD);
-    (void)mvaddstr(bottom + 3, left, "R: restart  Q: quit");
+    (void)mvaddstr(bottom + 3, left, "R: restart  M: main menu  Q: quit");
     (void)mvaddstr(bottom + 4, left, "Large tiles use exact 2^n notation.");
     (void)refresh();
 }

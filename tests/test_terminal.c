@@ -113,6 +113,13 @@ int main(void)
     assert(display_can_fit());
     test_rendering();
     test_input();
+    bool main_menu = false;
+    assert(ungetch('m') != ERR);
+    assert(input_poll_navigation(&main_menu) == ACTION_NONE && main_menu);
+    assert(ungetch('M') != ERR);
+    assert(input_poll_navigation(&main_menu) == ACTION_NONE && main_menu);
+    assert(ungetch('?') != ERR);
+    assert(input_poll_navigation(&main_menu) == ACTION_NONE && !main_menu);
     assert(resizeterm(2, 40) != ERR);
     assert(!display_can_fit());
     display_render(&game);

@@ -5,6 +5,7 @@
 
 typedef struct {
     Game2048Action action;
+    bool main_menu; /* Host-owned return to the game selector. */
     unsigned int selected_size; /* 4/6 at the menu; zero means no selection. */
 } Game2048Input;
 

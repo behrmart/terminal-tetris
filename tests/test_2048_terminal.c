@@ -81,6 +81,66 @@ static void test_input(void)
     }
 }
 
+static void dispatch_key(Game2048 *game, int key)
+{
+    assert(ungetch(key) != ERR);
+    const Game2048Input input = game2048_input_poll();
+    game2048_process_action(game, input.action);
+    game2048_display_render(game);
+}
+
+/* Exercise real input -> engine -> screen transitions for both board sizes. */
+static void test_playthrough(unsigned int size)
+{
+    Game2048 game;
+    Game2048 initial;
+    assert(game2048_init(&game, size, UINT32_C(42)));
+    initial = game;
+    assert(resizeterm((int)game2048_display_min_rows(size),
+                     (int)game2048_display_min_columns(size)) != ERR);
+    assert(game2048_board_init(&game.board, size));
+    game.board.cells[0][0] = 10U;
+    game.board.cells[0][1] = 10U;
+    dispatch_key(&game, KEY_LEFT);
+    assert(game.score == UINT64_C(2048));
+    assert(game.board.cells[0][0] == 11U);
+    assert(game.status == GAME2048_WON);
+    expect_text(1, 1, "Score: 2048");
+    expect_text(5 + (int)size * 3, 1, "2048 reached! C: continue");
+    const uint32_t frozen_random = game.random_state;
+    dispatch_key(&game, KEY_RIGHT);
+    assert(game.random_state == frozen_random);
+    assert(game.board.cells[0][0] == 11U);
+    dispatch_key(&game, 'C');
+    assert(game.status == GAME2048_RUNNING && game.win_acknowledged);
+    expect_text(5 + (int)size * 3, 1, "RUNNING");
+
+    /* A full checkerboard cannot move; acknowledging its win reveals loss. */
+    for (unsigned int y = 0U; y < size; ++y) {
+        for (unsigned int x = 0U; x < size; ++x) {
+            game.board.cells[y][x] = (Game2048Tile)(1U + (x + y) % 2U);
+        }
+    }
+    game.board.cells[0][0] = 11U;
+    game.status = GAME2048_WON;
+    game.win_acknowledged = false;
+    dispatch_key(&game, 'c');
+    assert(game.status == GAME2048_OVER);
+    expect_text(5 + (int)size * 3, 1, "GAME OVER - R: restart");
+    dispatch_key(&game, 'R');
+    assert(game.status == initial.status && game.score == initial.score);
+    assert(game.random_state == initial.random_state);
+    assert(game.initial_seed == initial.initial_seed);
+    assert(game.board.size == initial.board.size);
+    assert(game.win_acknowledged == initial.win_acknowledged);
+    for (unsigned int y = 0U; y < GAME2048_MAX_SIZE; ++y) {
+        for (unsigned int x = 0U; x < GAME2048_MAX_SIZE; ++x) {
+            assert(game.board.cells[y][x] == initial.board.cells[y][x]);
+        }
+    }
+    expect_text(1, 1, "Score: 0");
+    expect_text(5 + (int)size * 3, 1, "RUNNING");
+}
 int main(void)
 {
     assert(game2048_display_init());
@@ -91,6 +151,14 @@ int main(void)
     test_rendering(4U);
     test_rendering(6U);
     test_input();
+    assert(ungetch('m') != ERR);
+    assert(game2048_input_poll().main_menu);
+    assert(ungetch('M') != ERR);
+    assert(game2048_input_poll().main_menu);
+    assert(ungetch('?') != ERR);
+    assert(!game2048_input_poll().main_menu);
+    test_playthrough(4U);
+    test_playthrough(6U);
     game2048_display_shutdown();
     game2048_display_shutdown();
     (void)puts("2048 terminal rendering and input tests passed.");

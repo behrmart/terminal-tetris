@@ -5,6 +5,7 @@ CFLAGS += -std=c11 -Wall -Wextra -Wpedantic -Wconversion -g
 
 BUILD_DIR := build
 TARGET := $(BUILD_DIR)/terminal-tetris
+TARGET_GAMES := $(BUILD_DIR)/terminal-games
 CORE_SOURCES := src/board.c src/tetromino.c src/game.c
 SOURCES := src/main.c $(CORE_SOURCES) src/input.c src/display.c
 OBJECTS := $(SOURCES:src/%.c=$(BUILD_DIR)/%.o)
@@ -17,8 +18,8 @@ TEST_2048_TARGETS := $(BUILD_DIR)/test-2048-game $(BUILD_DIR)/test-2048-board
 NCURSES_CFLAGS = $(shell $(PKG_CONFIG) --cflags ncurses)
 NCURSES_LIBS = $(shell $(PKG_CONFIG) --libs ncurses)
 
-.PHONY: all run debug test test-terminal package clean check-ncurses run-2048 test-2048 test-2048-terminal
-all: $(TARGET) $(TARGET_2048)
+.PHONY: all run debug test test-terminal package clean check-ncurses run-2048 test-2048 test-2048-terminal package-2048 test-2048-package check run-tetris test-menu package-games
+all: $(TARGET_GAMES) $(TARGET) $(TARGET_2048)
 
 check-ncurses:
 	@$(PKG_CONFIG) --exists ncurses || { echo "Install pkg-config and libncurses-dev."; exit 1; }
@@ -29,8 +30,11 @@ $(BUILD_DIR):
 $(BUILD_DIR)/%.o: src/%.c | $(BUILD_DIR) check-ncurses
 	$(CC) $(CPPFLAGS) $(NCURSES_CFLAGS) $(CFLAGS) -MMD -MP -c $< -o $@
 
-$(TARGET): $(OBJECTS) | check-ncurses
-	$(CC) $(LDFLAGS) $(OBJECTS) $(NCURSES_LIBS) $(LDLIBS) -o $@
+$(TARGET_GAMES): $(OBJECTS) $(OBJECTS_2048) $(BUILD_DIR)/launcher.o | check-ncurses
+	$(CC) $(LDFLAGS) $(OBJECTS) $(OBJECTS_2048) $(BUILD_DIR)/launcher.o $(NCURSES_LIBS) $(LDLIBS) -o $@
+
+$(TARGET): $(TARGET_GAMES)
+	cp $< $@
 
 $(BUILD_DIR)/test-%: tests/test_%.c $(CORE_SOURCES) $(wildcard include/*.h) | $(BUILD_DIR)
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) $< $(CORE_SOURCES) $(LDLIBS) -o $@
@@ -51,8 +55,8 @@ $(BUILD_DIR)/game2048/%.o: src/game2048/%.c | check-ncurses
 	mkdir -p $(@D)
 	$(CC) $(CPPFLAGS) $(NCURSES_CFLAGS) $(CFLAGS) -MMD -MP -c $< -o $@
 
-$(TARGET_2048): $(OBJECTS_2048) | check-ncurses
-	$(CC) $(LDFLAGS) $(OBJECTS_2048) $(NCURSES_LIBS) $(LDLIBS) -o $@
+$(TARGET_2048): $(TARGET_GAMES)
+	cp $< $@
 
 $(BUILD_DIR)/test-2048-%: tests/test_2048_%.c $(CORE_2048_SOURCES) $(wildcard include/game2048/*.h) | $(BUILD_DIR)
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) $< $(CORE_2048_SOURCES) $(LDLIBS) -o $@
@@ -69,7 +73,10 @@ run-2048: $(TARGET_2048)
 test-2048: $(TEST_2048_TARGETS)
 	@set -e; for test_bin in $(TEST_2048_TARGETS); do ./$$test_bin; done
 
-run: $(TARGET)
+run: $(TARGET_GAMES)
+	./$(TARGET_GAMES)
+
+run-tetris: $(TARGET)
 	./$(TARGET)
 
 debug: $(TARGET)
@@ -81,4 +88,25 @@ test: $(TEST_TARGETS)
 clean:
 	rm -rf $(BUILD_DIR)
 
--include $(OBJECTS:.o=.d) $(OBJECTS_2048:.o=.d)
+-include $(OBJECTS:.o=.d) $(OBJECTS_2048:.o=.d) $(BUILD_DIR)/launcher.d
+
+# Complete regression suite including the extracted 2048 package.
+check: test test-2048 test-terminal test-2048-terminal test-2048-package test-menu
+
+package-2048: $(TARGET_2048) packaging/README-2048.txt
+	install -d $(BUILD_DIR)/package/terminal-2048
+	install -m 755 $(TARGET_2048) $(BUILD_DIR)/package/terminal-2048/terminal-2048
+	install -m 644 packaging/README-2048.txt $(BUILD_DIR)/package/terminal-2048/README.txt
+	tar -czf $(BUILD_DIR)/terminal-2048-linux.tar.gz -C $(BUILD_DIR)/package terminal-2048/terminal-2048 terminal-2048/README.txt
+
+test-2048-package: package-2048
+	python3 tests/test_2048_package.py
+
+test-menu: all
+	python3 tests/test_menu.py
+
+package-games: $(TARGET_GAMES) packaging/README-games.txt
+	install -d $(BUILD_DIR)/package/terminal-games
+	install -m 755 $(TARGET_GAMES) $(BUILD_DIR)/package/terminal-games/terminal-games
+	install -m 644 packaging/README-games.txt $(BUILD_DIR)/package/terminal-games/README.txt
+	tar -czf $(BUILD_DIR)/terminal-games-linux.tar.gz -C $(BUILD_DIR)/package terminal-games/terminal-games terminal-games/README.txt

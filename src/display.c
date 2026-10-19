@@ -80,7 +80,7 @@ void display_render(const Game *game)
             (void)mvaddnstr(0, 0, message, columns - 1);
         }
         if (rows > 1 && columns > 1) {
-            (void)mvaddnstr(1, 0, "Enlarge terminal. Press Q to quit.", columns - 1);
+            (void)mvaddnstr(1, 0, "M: main menu  Q: quit", columns - 1);
         }
         (void)refresh();
         return;
@@ -144,6 +144,7 @@ void display_render(const Game *game)
     (void)mvaddstr(top + 17, panel, "P: pause / resume");
     (void)mvaddstr(top + 18, panel, "R: restart");
     (void)mvaddstr(top + 19, panel, "Q: quit");
+    (void)mvaddstr(top + 20, panel, "M: main menu");
     (void)mvaddstr(top + 21, panel, "Z: counterclockwise");
     (void)mvaddstr(top + 22, panel, "Up/X: clockwise");
     (void)mvaddstr(bottom + 2, left, "Arrows: move  Space: drop");
