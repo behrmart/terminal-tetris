@@ -32,12 +32,12 @@ typedef struct {
     bool win_acknowledged;
 } Game2048;
 
-/* Phase 1: initialize an EMPTY board and seed storage; no random tiles yet.
+/* Through Phase 2: initialize an EMPTY board and seed storage; no random tiles yet.
  * Invalid size or NULL returns false without changing game.
  */
 bool game2048_init(Game2048 *game, unsigned int size, uint32_t seed);
 
-/* Phase 1 placeholder: every action is inert. game must be initialized.
+/* Phase 2 placeholder: every action is inert. game must be initialized.
  * No elapsed-time API is needed for this turn-based game.
  */
 void game2048_process_action(Game2048 *game, Game2048Action action);

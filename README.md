@@ -5,11 +5,12 @@ ncurses. **Milestone 5:** playable terminal Tetris with colored pieces,
 a next-piece preview, gravity, line clearing, scoring, levels, pause,
 restart and game-over handling.
 
-## Terminal 2048 (Phase 1)
+## Terminal 2048 (Phase 2)
 
-A separate 2048 game is being added alongside Tetris. Phase 1 provides the
-project skeleton, state structures and initialization for 4x4 and 6x6
-boards. It is not playable yet: boards start empty and actions do nothing.
+A separate 2048 game is being added alongside Tetris. Phase 2 implements
+board slides, single merges, score gains and move availability for 4x4 and
+6x6 boards. It is not playable yet: game initialization still creates an
+empty board, and game actions are not connected to board moves.
 
     make all
     make test-2048
@@ -25,14 +26,15 @@ The isolated modules live in include/game2048 and src/game2048:
 board handles fixed-size storage; game owns score, seed and status;
 input/display are reserved for the future interface; main owns lifecycle.
 tests/test_2048_game.c checks both sizes, initialization, invalid sizes and
-the Phase 1 no-op action contract. Engine tests do not link ncurses or Tetris.
+the current no-op game action contract. tests/test_2048_board.c covers slides,
+merges, bounds, score gains and move availability. Engine tests do not link
+ncurses or Tetris.
 
 Existing make run, make debug, make test, make test-terminal and make package
 retain their Tetris behavior. No 2048 package is provided in this phase.
 
 Remaining 2048 phases:
 
-2. Slide/merge mechanics and board tests.
 3. Deterministic spawning, score, win/loss and restart.
 4. Board-size selection and the playable terminal interface.
 5. Integration checks and a separate binary package.
@@ -46,8 +48,36 @@ Remaining 2048 phases:
 - make run-2048: the expected skeleton notice appeared and the program
   returned to the shell without a reported error.
 
-These results supersede the authoring-host tooling limitation. Phase 2
-has not been started.
+These Phase 1 results superseded the authoring-host tooling limitation
+for that phase.
+
+Phase 2 board API:
+
+- game2048_board_move(board, direction) slides and merges without spawning.
+  It returns changed and score_gained; invalid inputs return false/zero
+  without altering the board.
+- game2048_board_has_moves(board) checks whether any direction would change
+  cells. It is read-only; empty and invalid boards return false. This is a
+  board query, not a game-over transition.
+
+Tiles store exponents (1 means 2, 2 means 4). Equal tiles merge once per move:
+2 2 2 2 becomes 4 4; 2 2 4 becomes 4 4; 2 0 2 2 becomes 4 2 when moved left.
+The score gain is the sum of merged values, saturated at UINT64_MAX.
+Exponent-63 tiles may slide but cannot merge further. Only active cells are
+validated or modified; unused storage is preserved.
+
+2048 Phase 2 was verified by the user on Hyrule-2 on 2026-10-19:
+
+- make clean && make: both executables built with no warnings or errors
+  in the supplied output.
+- make test: all three Tetris engine test suites passed.
+- make test-2048: initialization and board tests passed, covering both sizes,
+  directions, merges, score gains, limits and move availability.
+- make run-2048: the expected Phase 2 notice appeared and the program
+  returned to the shell without a reported error.
+
+These results supersede the authoring-host verification limitation.
+Phase 3 has not been started.
 
 ## Build and run
 
@@ -117,8 +147,8 @@ The sidebar shows the next piece, score, lines, level and game status.
 ## Make targets
 
 - make / make all: build both games with GCC, debug symbols and strict warnings.
-- make run-2048: build and launch the noninteractive 2048 Phase 1 notice.
-- make test-2048: run isolated 2048 structure tests without ncurses.
+- make run-2048: build and launch the noninteractive 2048 Phase 2 notice.
+- make test-2048: run isolated 2048 initialization and board tests without ncurses.
 - make run: build and launch the program.
 - make package: build a Linux binary archive with run instructions.
 - make debug: build and launch the program under GDB.

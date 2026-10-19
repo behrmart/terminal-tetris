@@ -13,7 +13,7 @@ TARGET_2048 := $(BUILD_DIR)/terminal-2048
 CORE_2048_SOURCES := src/game2048/board.c src/game2048/game.c
 SOURCES_2048 := src/game2048/main.c $(CORE_2048_SOURCES) src/game2048/input.c src/game2048/display.c
 OBJECTS_2048 := $(SOURCES_2048:src/%.c=$(BUILD_DIR)/%.o)
-TEST_2048_TARGET := $(BUILD_DIR)/test-2048-game
+TEST_2048_TARGETS := $(BUILD_DIR)/test-2048-game $(BUILD_DIR)/test-2048-board
 NCURSES_CFLAGS = $(shell $(PKG_CONFIG) --cflags ncurses)
 NCURSES_LIBS = $(shell $(PKG_CONFIG) --libs ncurses)
 
@@ -54,14 +54,14 @@ $(BUILD_DIR)/game2048/%.o: src/game2048/%.c | check-ncurses
 $(TARGET_2048): $(OBJECTS_2048) | check-ncurses
 	$(CC) $(LDFLAGS) $(OBJECTS_2048) $(NCURSES_LIBS) $(LDLIBS) -o $@
 
-$(TEST_2048_TARGET): tests/test_2048_game.c $(CORE_2048_SOURCES) $(wildcard include/game2048/*.h) | $(BUILD_DIR)
-	$(CC) $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) tests/test_2048_game.c $(CORE_2048_SOURCES) $(LDLIBS) -o $@
+$(BUILD_DIR)/test-2048-%: tests/test_2048_%.c $(CORE_2048_SOURCES) $(wildcard include/game2048/*.h) | $(BUILD_DIR)
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) $< $(CORE_2048_SOURCES) $(LDLIBS) -o $@
 
 run-2048: $(TARGET_2048)
 	./$(TARGET_2048)
 
-test-2048: $(TEST_2048_TARGET)
-	./$(TEST_2048_TARGET)
+test-2048: $(TEST_2048_TARGETS)
+	@set -e; for test_bin in $(TEST_2048_TARGETS); do ./$$test_bin; done
 
 run: $(TARGET)
 	./$(TARGET)

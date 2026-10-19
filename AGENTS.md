@@ -91,7 +91,7 @@ from monotonic milliseconds; restart reuses the launch seed.
 SIGINT/SIGTERM/SIGHUP handlers only set a flag. Restore terminal settings
 before printing clock errors or returning from the application.
 
-## 2048 Phase 1 scope
+## 2048 Phase 2 scope
 The repository also contains a separate Terminal 2048 skeleton under
 include/game2048 and src/game2048. The rules above about Tetris gravity,
 tetrominoes, scoring and terminal layout apply only to Tetris.
@@ -105,11 +105,18 @@ exponents: 0 is empty, n represents 2^n, with a maximum exponent of 63.
 Invalid initialization must leave state unchanged. Store the explicit
 initial seed and per-game random state. There is no elapsed-time API.
 
-Phase 1 initializes empty boards and provides inert action/input stubs.
-The executable prints a noninteractive notice and exits normally. Do not
-add merging, movement, random tiles or an ncurses interface until their
-phases are requested. Win acknowledgment, overflow behavior and spawning
-are design contracts for subsequent phases, not implemented gameplay.
+Phase 2 implements board slides/merges and read-only move availability.
+Map directions to a single destination-first line compaction/merge routine.
+Merge each input tile at most once per move. Return changed and score gained;
+saturate the score gain at UINT64_MAX. Exponent-63 tiles slide but never merge.
+Reject invalid sizes, directions and active tile exponents before mutation.
+Preserve storage outside the active board. Empty boards have no changing move.
+
+Game initialization still creates empty boards; action/input stubs remain
+inert. The executable prints a noninteractive notice and exits. Do not add
+spawning, game-state action integration, win/loss transitions or the ncurses
+interface until their phases are requested. 2048 board tests must cover both
+sizes, all directions, merge ordering, blocked moves, limits and score gains.
 
 make all builds both executables. Existing run/debug/test/test-terminal/
 package targets retain their Tetris behavior. Use run-2048 and test-2048

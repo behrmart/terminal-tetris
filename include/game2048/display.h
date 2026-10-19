@@ -3,7 +3,7 @@
 
 #include "game2048/game.h"
 
-/* Phase 1: print a noninteractive skeleton notice; never change game state.
+/* Through Phase 2: print a noninteractive skeleton notice; never change game state.
  * The ncurses interface is reserved for Phase 4.
  */
 void game2048_display_render(const Game2048 *game);
