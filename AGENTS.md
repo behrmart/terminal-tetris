@@ -91,8 +91,8 @@ from monotonic milliseconds; restart reuses the launch seed.
 SIGINT/SIGTERM/SIGHUP handlers only set a flag. Restore terminal settings
 before printing clock errors or returning from the application.
 
-## 2048 Phase 3 scope
-The repository also contains a separate Terminal 2048 skeleton under
+## 2048 Phase 4 scope
+The repository also contains a separate playable Terminal 2048 game under
 include/game2048 and src/game2048. The rules above about Tetris gravity,
 tetrominoes, scoring and terminal layout apply only to Tetris.
 Shared C11 conventions and the engine/terminal dependency boundary apply
@@ -124,8 +124,17 @@ movement until CONTINUE, which acknowledges once and either resumes or
 sets OVER if no moves remain. Restart works from any status, retaining
 size and original seed. None/quit/unknown actions are inert; quit is host-owned.
 
-Input remains a stub; the executable prints a noninteractive notice and
-exits. Do not add the playable ncurses interface until Phase 4 is requested.
+Phase 4 provides a startup selector (4/6; Enter defaults to 4), arrows for
+movement, R for restart, C for continue after winning and Q for quit.
+Numeric selections are ignored after starting a game. Letter controls accept
+both cases. The display reads state only and uses ASCII borders for PuTTY.
+Use seven-column cells; values longer than seven digits use exact 2^n
+notation rather than truncation. Minimum sizes are 42x22 (4x4), 51x28 (6x6)
+and 42x9 (menu). Keep game state unchanged while undersized; accept only quit,
+and discard the first recovery input. There is no gameplay timer.
+Read the monotonic clock in main only to seed a newly selected game.
+Signal handlers only set a flag; normal control flow restores the terminal.
+Do not add 2048 binary packaging until Phase 5 is requested.
 Tests must cover both sizes, seeds, one-tile spawning, no-op preservation,
 score saturation, win/loss priority, continue, restart and replay.
 
@@ -134,4 +143,6 @@ package targets retain their Tetris behavior. Use run-2048 and test-2048
 for the new game. 2048 engine tests must not compile/link Tetris, ncurses
 or OS-specific code. Object files live under build/game2048 to avoid clashes.
 For 2048 changes run make clean && make, make test and make test-2048.
-Run make run-2048 to check skeleton startup and normal exit.
+Run make test-2048-terminal for frontend screen/input and PTY cleanup checks
+(Python 3 standard library). Run make run-2048 for manual gameplay in both sizes.
+Preserve existing Tetris test targets and keep make test-2048 free of ncurses.

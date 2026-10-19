@@ -3,9 +3,13 @@
 
 #include "game2048/game.h"
 
-/* Through Phase 3: print a noninteractive skeleton notice; never change game state.
- * The ncurses interface is reserved for Phase 4.
- */
+/* size 0 means the startup menu; gameplay sizes are 4 and 6. */
+unsigned int game2048_display_min_columns(unsigned int size);
+unsigned int game2048_display_min_rows(unsigned int size);
+bool game2048_display_init(void);
+bool game2048_display_can_fit(unsigned int size);
+void game2048_display_menu(void);
 void game2048_display_render(const Game2048 *game);
+void game2048_display_shutdown(void);
 
 #endif

@@ -17,7 +17,7 @@ TEST_2048_TARGETS := $(BUILD_DIR)/test-2048-game $(BUILD_DIR)/test-2048-board
 NCURSES_CFLAGS = $(shell $(PKG_CONFIG) --cflags ncurses)
 NCURSES_LIBS = $(shell $(PKG_CONFIG) --libs ncurses)
 
-.PHONY: all run debug test test-terminal package clean check-ncurses run-2048 test-2048
+.PHONY: all run debug test test-terminal package clean check-ncurses run-2048 test-2048 test-2048-terminal
 all: $(TARGET) $(TARGET_2048)
 
 check-ncurses:
@@ -56,6 +56,12 @@ $(TARGET_2048): $(OBJECTS_2048) | check-ncurses
 
 $(BUILD_DIR)/test-2048-%: tests/test_2048_%.c $(CORE_2048_SOURCES) $(wildcard include/game2048/*.h) | $(BUILD_DIR)
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) $< $(CORE_2048_SOURCES) $(LDLIBS) -o $@
+
+$(BUILD_DIR)/test-2048-terminal: tests/test_2048_terminal.c src/game2048/display.c src/game2048/input.c $(CORE_2048_SOURCES) $(wildcard include/game2048/*.h) | $(BUILD_DIR) check-ncurses
+	$(CC) $(CPPFLAGS) $(NCURSES_CFLAGS) $(CFLAGS) $(LDFLAGS) tests/test_2048_terminal.c src/game2048/display.c src/game2048/input.c $(CORE_2048_SOURCES) $(NCURSES_LIBS) $(LDLIBS) -o $@
+
+test-2048-terminal: $(TARGET_2048) $(BUILD_DIR)/test-2048-terminal
+	python3 tests/test_2048_terminal.py
 
 run-2048: $(TARGET_2048)
 	./$(TARGET_2048)

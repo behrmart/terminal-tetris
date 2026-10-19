@@ -5,26 +5,43 @@ ncurses. **Milestone 5:** playable terminal Tetris with colored pieces,
 a next-piece preview, gravity, line clearing, scoring, levels, pause,
 restart and game-over handling.
 
-## Terminal 2048 (Phase 3)
+## Terminal 2048 (Phase 4)
 
-A separate 2048 game is being added alongside Tetris. Phase 3 adds seeded
-tile spawning, scoring, win/loss handling, continue-after-win and restart
-for both 4x4 and 6x6 boards. The engine is implemented, but the terminal
-interface is still a noninteractive notice; playable controls arrive in Phase 4.
+Terminal 2048 now has a playable ncurses interface for 4x4 and 6x6 boards,
+with colored tiles, score, win/loss messages, restart and continued play
+after reaching 2048.
 
     make all
     make test-2048
+    make test-2048-terminal
     make run-2048
 
-make all builds build/terminal-tetris and build/terminal-2048. The 2048
-executable prints a skeleton notice for a default 4x4 board and exits.
-Board-size selection and the ncurses interface arrive in Phase 4; both
-sizes are already supported by the initialization API and structure tests.
-After building, it can also be launched with ./build/terminal-2048.
+Both games are built independently. You can also launch ./build/terminal-2048
+directly. At startup press 4 for 4x4, 6 for 6x6, or Enter for 4x4. To change
+board size, quit and launch again.
+
+| Key | 2048 action |
+| --- | --- |
+| Arrow keys | Slide and merge |
+| R | Restart the same size and seed |
+| C | Continue after the win message |
+| Q | Quit from the menu or game |
+
+Letter keys accept either case. The window must be at least 42x22 for 4x4
+or 51x28 for 6x6 (the menu requires 42x9). Smaller windows show a message,
+accept only quit, and leave the game unchanged. Recovery discards the first
+input; press a key again after the board returns. Tiles that exceed seven
+decimal digits use exact power notation, such as 2^63, to keep cells aligned.
+Colors fall back to plain numeric tiles on monochrome terminals.
+
+The 2048 frontend tests require Python 3 and Linux pseudo-terminals, just
+like the existing Tetris terminal tests. They cover both sizes, maximum
+values, statuses, input mappings, resize recovery and normal/signal cleanup.
+Run both modes in PuTTY to verify actual appearance and interactive play.
 
 The isolated modules live in include/game2048 and src/game2048:
 board handles fixed-size storage; game owns score, seed and status;
-input/display are reserved for the future interface; main owns lifecycle.
+input/display implement the terminal interface; main owns lifecycle and selection.
 tests/test_2048_game.c checks both sizes, spawning, score, no-op preservation,
 win/loss, continuation, restart and deterministic replay. tests/test_2048_board.c covers slides,
 merges, bounds, score gains and move availability. Engine tests do not link
@@ -35,7 +52,6 @@ retain their Tetris behavior. No 2048 package is provided in this phase.
 
 Remaining 2048 phases:
 
-4. Board-size selection and the playable terminal interface.
 5. Integration checks and a separate binary package.
 
 2048 Phase 1 was verified by the user on Hyrule-2 on 2026-10-19:
@@ -100,7 +116,9 @@ Phase 3 engine behavior:
   tiles, and the executable returned to the shell without a reported error.
 
 These results supersede the authoring-host verification limitation.
-Phase 4 has not been started.
+Phase 4 implementation is now present. Its Linux build and test execution
+remain pending: Make is unavailable on the Windows authoring host.
+Phase 5 packaging and broader integration verification have not been started.
 
 ## Build and run
 
@@ -170,7 +188,8 @@ The sidebar shows the next piece, score, lines, level and game status.
 ## Make targets
 
 - make / make all: build both games with GCC, debug symbols and strict warnings.
-- make run-2048: build and launch the noninteractive 2048 Phase 3 notice.
+- make run-2048: build and launch the playable 2048 size selector.
+- make test-2048-terminal: run 2048 screen/input and PTY checks (Python 3).
 - make test-2048: run isolated 2048 initialization and board tests without ncurses.
 - make run: build and launch the program.
 - make package: build a Linux binary archive with run instructions.
