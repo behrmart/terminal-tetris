@@ -18,7 +18,7 @@ TEST_2048_TARGETS := $(BUILD_DIR)/test-2048-game $(BUILD_DIR)/test-2048-board
 NCURSES_CFLAGS = $(shell $(PKG_CONFIG) --cflags ncurses)
 NCURSES_LIBS = $(shell $(PKG_CONFIG) --libs ncurses)
 
-.PHONY: all run debug test test-terminal package clean check-ncurses run-2048 test-2048 test-2048-terminal package-2048 test-2048-package check run-tetris test-menu package-games
+.PHONY: all run debug test test-terminal package clean check-ncurses run-2048 test-2048 test-2048-terminal package-2048 test-2048-package check run-tetris test-menu package-games test-scores test-login
 all: $(TARGET_GAMES) $(TARGET) $(TARGET_2048)
 
 check-ncurses:
@@ -30,8 +30,8 @@ $(BUILD_DIR):
 $(BUILD_DIR)/%.o: src/%.c | $(BUILD_DIR) check-ncurses
 	$(CC) $(CPPFLAGS) $(NCURSES_CFLAGS) $(CFLAGS) -MMD -MP -c $< -o $@
 
-$(TARGET_GAMES): $(OBJECTS) $(OBJECTS_2048) $(BUILD_DIR)/launcher.o | check-ncurses
-	$(CC) $(LDFLAGS) $(OBJECTS) $(OBJECTS_2048) $(BUILD_DIR)/launcher.o $(NCURSES_LIBS) $(LDLIBS) -o $@
+$(TARGET_GAMES): $(OBJECTS) $(OBJECTS_2048) $(BUILD_DIR)/launcher.o $(BUILD_DIR)/scores.o | check-ncurses
+	$(CC) $(LDFLAGS) $(OBJECTS) $(OBJECTS_2048) $(BUILD_DIR)/launcher.o $(BUILD_DIR)/scores.o $(NCURSES_LIBS) $(LDLIBS) -o $@
 
 $(TARGET): $(TARGET_GAMES)
 	cp $< $@
@@ -88,10 +88,10 @@ test: $(TEST_TARGETS)
 clean:
 	rm -rf $(BUILD_DIR)
 
--include $(OBJECTS:.o=.d) $(OBJECTS_2048:.o=.d) $(BUILD_DIR)/launcher.d
+-include $(OBJECTS:.o=.d) $(OBJECTS_2048:.o=.d) $(BUILD_DIR)/launcher.d $(BUILD_DIR)/scores.d
 
 # Complete regression suite including the extracted 2048 package.
-check: test test-2048 test-terminal test-2048-terminal test-2048-package test-menu
+check: test test-2048 test-terminal test-2048-terminal test-2048-package test-menu test-scores test-login
 
 package-2048: $(TARGET_2048) packaging/README-2048.txt
 	install -d $(BUILD_DIR)/package/terminal-2048
@@ -110,3 +110,12 @@ package-games: $(TARGET_GAMES) packaging/README-games.txt
 	install -m 755 $(TARGET_GAMES) $(BUILD_DIR)/package/terminal-games/terminal-games
 	install -m 644 packaging/README-games.txt $(BUILD_DIR)/package/terminal-games/README.txt
 	tar -czf $(BUILD_DIR)/terminal-games-linux.tar.gz -C $(BUILD_DIR)/package terminal-games/terminal-games terminal-games/README.txt
+
+$(BUILD_DIR)/test-scores: tests/test_scores.c src/scores.c include/scores.h | $(BUILD_DIR)
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) tests/test_scores.c src/scores.c $(LDLIBS) -o $@
+
+test-scores: $(BUILD_DIR)/test-scores
+	./$(BUILD_DIR)/test-scores
+
+test-login: all
+	python3 tests/test_login.py

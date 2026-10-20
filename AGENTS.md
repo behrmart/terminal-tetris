@@ -167,3 +167,17 @@ engine action enums and state remain independent of menu handling.
 Selecting a game starts fresh with new clock baseline and seed.
 Run make test-menu (included in make check) for navigation changes.
 package-games bundles the shared menu executable and its README.
+
+## Persistent player scores
+The launcher prompts for a case-sensitive 1-16 character ASCII username
+(letters, digits, underscore, hyphen). Esc cancels login; Q is a valid letter
+there and retains its quit behavior after login.
+src/scores.c is host-only persistence, never an engine dependency. Store
+separate personal bests for Tetris, 2048 4x4 and 2048 6x6 under XDG_STATE_HOME
+or HOME/.local/state, outside source/build/package folders.
+Save improvements immediately, retain in-memory maxima on failure and report
+errors. Merge concurrent writers under a lock and use atomic replacement.
+Reject malformed files without overwriting them. Never lower a best score.
+Use temporary directories for tests; never touch real player data.
+Run make test-scores and make test-login (both included in make check).
+Keep make test engine-only and independent of ncurses/Python.

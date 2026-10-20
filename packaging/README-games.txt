@@ -25,3 +25,14 @@ Optional user installation:
     install -m 755 ./terminal-games "$HOME/.local/bin/terminal-games"
 
 If ~/.local/bin is on PATH, type terminal-games.
+At startup choose a username: 1-16 ASCII letters/digits, underscore or hyphen.
+Names are case-sensitive. Enter confirms; Backspace edits; Esc cancels.
+The main menu shows personal bests for Tetris and each 2048 size.
+New bests save automatically to:
+    $XDG_STATE_HOME/terminal-games/scores/USERNAME.txt
+or, when XDG_STATE_HOME is unset/relative:
+    $HOME/.local/state/terminal-games/scores/USERNAME.txt
+Restart and relaunch preserve bests. Quit and relaunch to change player.
+This is a local player label, not a password-protected account.
+The state directory must be writable. Invalid score files cause an explicit
+error rather than being reset. Scores are not included in this package.

@@ -10,7 +10,7 @@
 #include "game2048/input.h"
 
 
-int game2048_run(const volatile sig_atomic_t *stop_requested)
+int game2048_run(const volatile sig_atomic_t *stop_requested, ScoreProfile *profile)
 {
     Game2048 game;
     bool playing = false;
@@ -53,6 +53,8 @@ int game2048_run(const volatile sig_atomic_t *stop_requested)
         /* Discard input while undersized and on the first recovery poll. */
         was_ready = game2048_display_can_fit(playing ? game.board.size : 0U);
         if (playing) {
+            scores_record(profile, game.board.size == 4U ? SCORE_2048_4 : SCORE_2048_6,
+                          game.score);
             game2048_display_render(&game);
         } else {
             game2048_display_menu();

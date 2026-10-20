@@ -11,17 +11,22 @@ import struct
 import subprocess
 import termios
 import time
+import tempfile
 
 ROOT = Path(__file__).resolve().parents[1]
 
 
 class Terminal:
-    def __init__(self, executable, rows=26, columns=54, term="xterm"):
+    def __init__(self, executable, rows=26, columns=54, term="xterm", login=True, state_dir=None):
         self.master, self.slave = pty.openpty()
         self.output = bytearray()
         self.original = termios.tcgetattr(self.slave)
-        self.resize(rows, columns, notify=False)
+        self.storage = tempfile.TemporaryDirectory(prefix="terminal-games-test-")
+        is_game = Path(executable).name in ("terminal-games", "terminal-tetris", "terminal-2048")
+        self.resize(max(rows, 9) if login and is_game else rows,
+                    max(columns, 32) if login and is_game else columns, notify=False)
         env = dict(os.environ, TERM=term)
+        env["XDG_STATE_HOME"] = str(state_dir if state_dir is not None else self.storage.name)
         env.pop("LINES", None)
         env.pop("COLUMNS", None)
         self.process = subprocess.Popen(
@@ -29,6 +34,17 @@ class Terminal:
             stdin=self.slave, stdout=self.slave, stderr=self.slave,
             env=env, start_new_session=True,
         )
+
+        if login and is_game:
+            try:
+                self.expect(b"PLAYER LOGIN")
+                self.send(b"test_player\n")
+                if rows < 9 or columns < 32:
+                    self.resize(rows, columns)
+                    self.read()
+            except BaseException:
+                self.close()
+                raise
 
     def resize(self, rows, columns, notify=True):
         fcntl.ioctl(self.slave, termios.TIOCSWINSZ,
@@ -77,6 +93,7 @@ class Terminal:
             self.process.wait()
         os.close(self.master)
         os.close(self.slave)
+        self.storage.cleanup()
 
 
 def run_checks():

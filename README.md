@@ -324,7 +324,7 @@ underlying deterministic mechanics; the PTY smoke tests do not automate
 an entire game or verify PuTTY's visual appearance.
 
 The game uses immediate locking, no wall kicks, no hold/ghost piece and
-no persistent high scores. No modern Tetris Guideline compliance is claimed.
+no saved board state. No modern Tetris Guideline compliance is claimed.
 
 ## Verification status
 
@@ -427,7 +427,7 @@ four directions, confirm merges and score changes, restart, resize below
 minimum and recover, then quit. Check color and monochrome readability.
 Automated transition fixtures cover win/continue/loss; PTY checks do not
 replace a full manual playthrough or verify PuTTY's visual appearance.
-No undo, persistent high scores or saved games are implemented.
+No undo or saved board state is implemented; personal best scores are persisted.
 
 ## Main menu and returning from games
 
@@ -465,3 +465,45 @@ points, undersized navigation, Q/q and SIGINT/SIGTERM/SIGHUP restoration.
 The extracted 2048 package test also switches into Tetris without siblings.
 Linux execution of these changes remains pending on the authoring host,
 which lacks Make/GCC. Check appearance and switching in PuTTY as well.
+
+## Player names and persistent personal bests
+
+Every launch (including the direct game executables) first asks for a
+username. Enter 1-16 ASCII letters, digits, underscores or hyphens, then
+press Enter. Backspace edits; Esc cancels. Names are case-sensitive.
+This is a local player label, not an authenticated account. Quit and relaunch
+to choose a different player. Login needs a 32x9 terminal and supports resize.
+
+The main menu displays the selected player's personal best for Tetris,
+2048 4x4 and 2048 6x6 separately. Each new best is written immediately.
+Restart, returning to the menu and relaunching cannot reduce a saved best.
+This stores high scores, not cumulative points, every run's history, or boards.
+
+Files are stored outside the build/source directories:
+- $XDG_STATE_HOME/terminal-games/scores/USERNAME.txt when XDG_STATE_HOME
+  is an absolute path.
+- Otherwise $HOME/.local/state/terminal-games/scores/USERNAME.txt.
+
+The directory is created automatically. Each text file contains the version
+line TERMINAL-GAMES-SCORES-1 followed by three decimal lines: Tetris, 2048
+4x4, 2048 6x6. Companion .lock files coordinate concurrent instances.
+Writes merge maxima under a lock, then replace via a temporary file in the
+same directory. Do not edit files while a game is running.
+make clean and rebuilding packages do not delete personal scores.
+Profiles are local to the Linux account; packaged executables use the same
+location and do not bundle personal data.
+
+Invalid existing files or an unwritable directory prevent startup with an
+error after terminal restoration; corrupt files are never silently reset.
+If a later save fails, the in-memory best is retained, the main menu shows
+a warning, and exit retries the save and reports any remaining failure.
+A failed save is not durable; correct the filesystem problem before exiting.
+
+src/scores.c is host-only file persistence; neither game engine depends on it.
+make test-scores runs Linux C file tests without ncurses. make test-login
+runs PTY login, profile reload, scoring/restart and cleanup checks.
+Both are included in make check. All PTY tests use temporary state directories,
+never your real profile. The original make test remains engine-only.
+
+Validation for this feature is pending on Ubuntu: make clean && make,
+then make check. Make/GCC are unavailable on the Windows authoring host.

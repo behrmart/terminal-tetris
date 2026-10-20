@@ -23,7 +23,7 @@ static bool monotonic_ms(uint64_t *milliseconds)
     return true;
 }
 
-int tetris_run(const volatile sig_atomic_t *stop_requested)
+int tetris_run(const volatile sig_atomic_t *stop_requested, ScoreProfile *profile)
 {
     Game game;
     uint64_t previous = 0U;
@@ -76,6 +76,7 @@ int tetris_run(const volatile sig_atomic_t *stop_requested)
             game_update(&game, bounded);
             game_process_action(&game, action);
         }
+        scores_record(profile, SCORE_TETRIS, game.score);
         previous = now;
         was_ready = ready;
         display_render(&game);
