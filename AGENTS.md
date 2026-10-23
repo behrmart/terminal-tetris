@@ -200,3 +200,13 @@ Score version 2 has four values (Drug Wars last); accept/migrate version 1
 with its original scores intact. Never overwrite malformed/unknown files.
 Run make test-drugwars, make test-drugwars-terminal, make test-scores and
 the full make check. Engine tests must not link ncurses or the other games.
+
+Drug Wars rendering prepares its dedicated color pairs (8..15) once after
+each terminal initialization. Do not redefine shared game pairs 1..7.
+Reset drawing attributes before returning from render. Preserve bold/reverse
+monochrome fallback and existing 72x25 coordinates and ASCII text.
+
+Shared menu styles live in menu_theme.c/menu_theme.h (terminal layer only).
+Prepare after terminal initialization; pairs 16..22 are reserved for menus,
+separate from game pairs 1..15. Always reset MENU_NORMAL after rendering.
+Preserve monochrome bold/reverse fallback, layouts and input bindings.

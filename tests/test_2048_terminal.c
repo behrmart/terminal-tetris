@@ -4,6 +4,7 @@
 
 #include "game2048/display.h"
 #include "game2048/input.h"
+#include "menu_theme.h"
 
 static void expect_text(int row, int column, const char *text)
 {
@@ -148,6 +149,31 @@ int main(void)
     game2048_display_menu();
     expect_text(0, 1, "TERMINAL 2048");
     expect_text(3, 1, "4: 4x4 classic    6: 6x6");
+    if (has_colors() && COLORS >= 8 && COLOR_PAIRS > 22) {
+        short foreground = 0, background = 0;
+        short pair = (short)PAIR_NUMBER(mvinch(0, 1));
+        assert(pair_content(pair, &foreground, &background) != ERR);
+        assert(foreground == COLOR_WHITE && background == COLOR_BLUE);
+        pair = (short)PAIR_NUMBER(mvinch(3, 1));
+        assert(pair_content(pair, &foreground, &background) != ERR);
+        assert(foreground == COLOR_YELLOW && background == COLOR_BLACK);
+        /* The login field is highlighted without modifying tile colors. */
+        menu_theme_style(MENU_FIELD);
+        (void)mvaddstr(8, 1, "player");
+        pair = (short)PAIR_NUMBER(mvinch(8, 1));
+        assert(pair_content(pair, &foreground, &background) != ERR);
+        assert(foreground == COLOR_BLACK && background == COLOR_CYAN);
+        assert(pair_content(1, &foreground, &background) != ERR);
+        assert(foreground == COLOR_BLACK && background == COLOR_CYAN);
+    } else {
+        assert(PAIR_NUMBER(mvinch(0, 1)) == 0);
+        assert((mvinch(0, 1) & A_BOLD) != 0U);
+        menu_theme_style(MENU_FIELD);
+        (void)mvaddstr(8, 1, "player");
+        assert((mvinch(8, 1) & A_REVERSE) != 0U);
+    }
+    menu_theme_style(MENU_NORMAL);
+    assert(getattrs(stdscr) == A_NORMAL);
     test_rendering(4U);
     test_rendering(6U);
     test_input();

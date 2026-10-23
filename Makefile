@@ -32,8 +32,8 @@ $(BUILD_DIR):
 $(BUILD_DIR)/%.o: src/%.c | $(BUILD_DIR) check-ncurses
 	$(CC) $(CPPFLAGS) $(NCURSES_CFLAGS) $(CFLAGS) -MMD -MP -c $< -o $@
 
-$(TARGET_GAMES): $(OBJECTS) $(OBJECTS_2048) $(DW_OBJECTS) $(BUILD_DIR)/launcher.o $(BUILD_DIR)/scores.o | check-ncurses
-	$(CC) $(LDFLAGS) $(OBJECTS) $(OBJECTS_2048) $(DW_OBJECTS) $(BUILD_DIR)/launcher.o $(BUILD_DIR)/scores.o $(NCURSES_LIBS) $(LDLIBS) -o $@
+$(TARGET_GAMES): $(OBJECTS) $(OBJECTS_2048) $(DW_OBJECTS) $(BUILD_DIR)/launcher.o $(BUILD_DIR)/menu_theme.o $(BUILD_DIR)/scores.o | check-ncurses
+	$(CC) $(LDFLAGS) $(OBJECTS) $(OBJECTS_2048) $(DW_OBJECTS) $(BUILD_DIR)/launcher.o $(BUILD_DIR)/menu_theme.o $(BUILD_DIR)/scores.o $(NCURSES_LIBS) $(LDLIBS) -o $@
 
 $(TARGET): $(TARGET_GAMES)
 	cp $< $@
@@ -63,8 +63,8 @@ $(TARGET_2048): $(TARGET_GAMES)
 $(BUILD_DIR)/test-2048-%: tests/test_2048_%.c $(CORE_2048_SOURCES) $(wildcard include/game2048/*.h) | $(BUILD_DIR)
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) $< $(CORE_2048_SOURCES) $(LDLIBS) -o $@
 
-$(BUILD_DIR)/test-2048-terminal: tests/test_2048_terminal.c src/game2048/display.c src/game2048/input.c $(CORE_2048_SOURCES) $(wildcard include/game2048/*.h) | $(BUILD_DIR) check-ncurses
-	$(CC) $(CPPFLAGS) $(NCURSES_CFLAGS) $(CFLAGS) $(LDFLAGS) tests/test_2048_terminal.c src/game2048/display.c src/game2048/input.c $(CORE_2048_SOURCES) $(NCURSES_LIBS) $(LDLIBS) -o $@
+$(BUILD_DIR)/test-2048-terminal: tests/test_2048_terminal.c src/game2048/display.c src/game2048/input.c src/menu_theme.c $(CORE_2048_SOURCES) $(wildcard include/game2048/*.h) include/menu_theme.h | $(BUILD_DIR) check-ncurses
+	$(CC) $(CPPFLAGS) $(NCURSES_CFLAGS) $(CFLAGS) $(LDFLAGS) tests/test_2048_terminal.c src/game2048/display.c src/game2048/input.c src/menu_theme.c $(CORE_2048_SOURCES) $(NCURSES_LIBS) $(LDLIBS) -o $@
 
 test-2048-terminal: $(TARGET_2048) $(BUILD_DIR)/test-2048-terminal
 	python3 tests/test_2048_terminal.py
@@ -90,7 +90,7 @@ test: $(TEST_TARGETS)
 clean:
 	rm -rf $(BUILD_DIR)
 
--include $(OBJECTS:.o=.d) $(OBJECTS_2048:.o=.d) $(BUILD_DIR)/launcher.d $(BUILD_DIR)/scores.d $(DW_OBJECTS:.o=.d)
+-include $(OBJECTS:.o=.d) $(OBJECTS_2048:.o=.d) $(BUILD_DIR)/launcher.d $(BUILD_DIR)/menu_theme.d $(BUILD_DIR)/scores.d $(DW_OBJECTS:.o=.d)
 
 # Complete regression suite including the extracted 2048 package.
 check: test test-2048 test-terminal test-2048-terminal test-2048-package test-menu test-scores test-login test-drugwars test-drugwars-terminal

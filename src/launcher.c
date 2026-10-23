@@ -2,6 +2,7 @@
 
 #include "session.h"
 #include "display.h"
+#include "menu_theme.h"
 
 #include <inttypes.h>
 #include <locale.h>
@@ -25,6 +26,7 @@ static int choose_username(char name[SCORE_NAME_MAX + 1])
     if (!display_init()) {
         return -1;
     }
+    menu_theme_prepare();
     size_t length = 0U;
     name[0] = '\0';
     int result = 0;
@@ -32,19 +34,29 @@ static int choose_username(char name[SCORE_NAME_MAX + 1])
         const int rows = getmaxy(stdscr);
         const int columns = getmaxx(stdscr);
         const bool ready = rows >= 9 && columns >= 32;
+        menu_theme_style(MENU_NORMAL);
         (void)erase();
         if (ready) {
             const int top = (rows - 9) / 2;
             const int left = (columns - 30) / 2;
+            menu_theme_style(MENU_TITLE);
+            (void)mvhline(top, left, ' ', 30);
             (void)mvaddstr(top, left, "PLAYER LOGIN");
+            menu_theme_style(MENU_HEADING);
             (void)mvaddstr(top + 2, left, "Username:");
+            menu_theme_style(MENU_FIELD);
+            (void)mvhline(top + 3, left, ' ', 18);
             (void)mvaddstr(top + 3, left, name);
+            menu_theme_style(MENU_NORMAL);
             (void)mvaddstr(top + 5, left, "1-16 letters/digits, _ or -");
             (void)mvaddstr(top + 6, left, "Names are case-sensitive.");
+            menu_theme_style(MENU_KEYS);
             (void)mvaddstr(top + 7, left, "Enter: play  Esc: quit");
         } else if (rows > 0 && columns > 1) {
+            menu_theme_style(MENU_WARNING);
             (void)mvaddnstr(0, 0, "Need 32x9 - Esc: quit", columns - 1);
         }
+        menu_theme_style(MENU_NORMAL);
         (void)refresh();
         const int key = getch();
         if (key == 27 || stop_requested) {
@@ -78,6 +90,7 @@ static int select_game(const ScoreProfile *profile)
     if (!display_init()) {
         return -1;
     }
+    menu_theme_prepare();
     int selection = 0;
     (void)flushinp();
     bool was_ready = getmaxy(stdscr) >= 9 && getmaxx(stdscr) >= 32;
@@ -85,23 +98,34 @@ static int select_game(const ScoreProfile *profile)
         const int rows = getmaxy(stdscr);
         const int columns = getmaxx(stdscr);
         const bool ready = rows >= 9 && columns >= 32;
+        menu_theme_style(MENU_NORMAL);
         (void)erase();
         if (ready) {
             const int top = (rows - 9) / 2;
             const int left = (columns - 30) / 2;
+            menu_theme_style(MENU_TITLE);
+            (void)mvhline(top, left, ' ', 30);
             (void)mvaddstr(top, left, "TERMINAL GAMES");
+            menu_theme_style(MENU_HEADING);
             (void)mvprintw(top + 1, left, "Player: %s", profile->username);
+            menu_theme_style(MENU_SCORE);
             (void)mvprintw(top + 2, left, "1:Tetris %" PRIu64, profile->best[SCORE_TETRIS]);
+            menu_theme_style(MENU_HEADING);
             (void)mvaddstr(top + 3, left, "2: 2048");
+            menu_theme_style(MENU_SCORE);
             (void)mvprintw(top + 4, left, "4x4 best: %" PRIu64, profile->best[SCORE_2048_4]);
             (void)mvprintw(top + 5, left, "6x6 best: %" PRIu64, profile->best[SCORE_2048_6]);
             (void)mvprintw(top + 6, left, "3:DrugWars %" PRIu64, profile->best[SCORE_DRUGWARS]);
+            menu_theme_style(profile->save_failed ? MENU_WARNING : MENU_SUCCESS);
             (void)mvaddstr(top + 7, left, profile->save_failed ?
                           "Save failed; retry on exit" : "Personal best scores");
+            menu_theme_style(MENU_KEYS);
             (void)mvaddstr(top + 8, left, "1/2/3: play  Q: quit");
         } else if (rows > 0 && columns > 1) {
+            menu_theme_style(MENU_WARNING);
             (void)mvaddnstr(0, 0, "Need 32x9 - Q: quit", columns - 1);
         }
+        menu_theme_style(MENU_NORMAL);
         (void)refresh();
         const int key = getch();
         if (key == 'q' || key == 'Q' || stop_requested) {

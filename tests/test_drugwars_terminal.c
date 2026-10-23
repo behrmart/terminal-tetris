@@ -14,9 +14,50 @@ static DwInput key(DwUi *ui, const DwGame *game, int code)
     assert(ungetch(code) != ERR);
     return dw_input_poll(ui, game);
 }
+static void expect_color(int row, int column, short foreground, short background)
+{
+    short actual_foreground = 0;
+    short actual_background = 0;
+    const short pair = (short)PAIR_NUMBER(mvinch(row, column));
+    assert(pair_content(pair, &actual_foreground, &actual_background) != ERR);
+    assert(actual_foreground == foreground && actual_background == background);
+}
+
+static void test_palette(DwGame *game, DwUi *ui)
+{
+    if (has_colors() && COLORS >= 8 && COLOR_PAIRS > 15) {
+        expect_color(0, 0, COLOR_WHITE, COLOR_BLUE);
+        expect_color(3, 0, COLOR_GREEN, COLOR_BLACK);
+        expect_color(3, 21, COLOR_RED, COLOR_BLACK);
+        expect_color(7, 0, COLOR_BLACK, COLOR_CYAN);
+        expect_color(2, 25, COLOR_GREEN, COLOR_BLACK);
+        game->health = 50U;
+        dw_display_render(game, ui, "tester", 0U);
+        expect_color(2, 25, COLOR_YELLOW, COLOR_BLACK);
+        game->health = 20U;
+        dw_display_render(game, ui, "tester", 0U);
+        expect_color(2, 25, COLOR_RED, COLOR_BLACK);
+        ui->rejected = true;
+        dw_display_render(game, ui, "tester", 0U);
+        expect_color(16, 0, COLOR_RED, COLOR_BLACK);
+        short foreground = 0, background = 0;
+        assert(pair_content(1, &foreground, &background) != ERR);
+        assert(foreground == COLOR_BLACK && background == COLOR_CYAN);
+        assert(pair_content(7, &foreground, &background) != ERR);
+        assert(foreground == COLOR_BLACK && background == COLOR_WHITE);
+        game->health = 100U;
+        ui->rejected = false;
+        dw_display_render(game, ui, "tester", 0U);
+    } else {
+        assert(PAIR_NUMBER(mvinch(0, 0)) == 0);
+        assert((mvinch(7, 0) & A_REVERSE) != 0U);
+    }
+    assert(getattrs(stdscr) == A_NORMAL);
+}
 int main(void)
 {
     assert(display_init());
+    dw_display_prepare();
     assert(resizeterm(25, 72) != ERR);
     DwGame game;
     DwUi ui = {0};
@@ -24,6 +65,7 @@ int main(void)
     dw_display_render(&game, &ui, "tester", UINT64_MAX);
     text_at(0, 0, "TERMINAL DRUG WARS");
     text_at(2, 0, "Day 1/30");
+    test_palette(&game, &ui);
     assert(key(&ui, &game, '6').action.type == DW_NONE && ui.selected == 5U);
     (void)key(&ui, &game, 'B');
     dw_display_render(&game, &ui, "tester", 0U);

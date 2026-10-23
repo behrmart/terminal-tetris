@@ -20,6 +20,7 @@ int drugwars_run(const volatile sig_atomic_t *stop_requested, ScoreProfile *prof
         (void)fputs("Could not initialize the terminal.\n", stderr);
         return EXIT_FAILURE;
     }
+    dw_display_prepare();
     bool was_ready = dw_display_can_fit();
     bool menu = false;
     dw_display_render(&game, &ui, profile->username, profile->best[SCORE_DRUGWARS]);

@@ -578,3 +578,26 @@ The existing package test now enters Drug Wars from the extracted binary.
 Build and test execution for this addition remain pending on Ubuntu:
 Make/GCC are unavailable on the Windows authoring host. Manual PuTTY play
 should include buying/selling, every banking prompt and finishing a run.
+
+### Drug Wars colors
+
+Drug Wars uses a blue title bar, cyan selected row and district, green cash
+and owned stock, gold prices/personal bests/prompts, and red debt/errors.
+Health is green above 60, gold at 31-60, and red at 30 or below.
+Zero debt is green. Completed runs are green; game over is red.
+Dedicated color pairs leave the other games' palettes unchanged.
+Monochrome terminals retain bold headings and reverse-video selection.
+The ASCII layout and minimum size remain 72x25. Actual shades depend on
+your terminal/PuTTY palette. Terminal tests check colors under xterm and
+the monochrome fallback under vt100.
+
+### Menu and personal-best colors
+
+Login, the main menu/personal-best screen, and the 2048 board selector use
+a shared theme: blue title bars, cyan headings, gold scores/options, green
+status text, magenta controls and red warnings. The username input has a
+cyan background. Monochrome terminals retain bold headings and a
+reverse-video input field. Layout, controls and minimum sizes are unchanged.
+Menu color pairs 16..22 are separate from all game palettes. The shared
+theme is initialized on each terminal session and resets drawing attributes
+after rendering. Actual shades depend on your terminal's palette.

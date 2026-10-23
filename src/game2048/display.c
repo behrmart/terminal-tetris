@@ -1,4 +1,5 @@
 #include "game2048/display.h"
+#include "menu_theme.h"
 
 #include <inttypes.h>
 #include <ncurses.h>
@@ -49,6 +50,7 @@ bool game2048_display_init(void)
             }
         }
     }
+    menu_theme_prepare();
     return true;
 }
 
@@ -75,20 +77,27 @@ static void draw_small(unsigned int size)
 
 void game2048_display_menu(void)
 {
+    menu_theme_style(MENU_NORMAL);
     (void)erase();
     if (!game2048_display_can_fit(0U)) {
+        menu_theme_style(MENU_WARNING);
         draw_small(0U);
     } else {
         const int left = (getmaxx(stdscr) - 40) / 2;
         const int top = (getmaxy(stdscr) - 9) / 2;
-        (void)attron(A_BOLD);
+        menu_theme_style(MENU_TITLE);
+        (void)mvhline(top, left, ' ', 40);
         (void)mvaddstr(top, left, "TERMINAL 2048");
-        (void)attroff(A_BOLD);
+        menu_theme_style(MENU_HEADING);
         (void)mvaddstr(top + 2, left, "Choose your board:");
+        menu_theme_style(MENU_SCORE);
         (void)mvaddstr(top + 3, left, "4: 4x4 classic    6: 6x6");
+        menu_theme_style(MENU_KEYS);
         (void)mvaddstr(top + 5, left, "Enter: 4x4  M: main menu  Q: quit");
+        menu_theme_style(MENU_SUCCESS);
         (void)mvaddstr(top + 7, left, "Join equal tiles to reach 2048.");
     }
+    menu_theme_style(MENU_NORMAL);
     (void)refresh();
 }
 
