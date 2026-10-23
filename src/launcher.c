@@ -72,7 +72,7 @@ static int choose_username(char name[SCORE_NAME_MAX + 1])
     display_shutdown();
     return result;
 }
-/* Return 1/2 for a game, zero for quit, or -1 for initialization failure. */
+/* Return 1/2/3 for a game, zero for quit, or -1 for initialization failure. */
 static int select_game(const ScoreProfile *profile)
 {
     if (!display_init()) {
@@ -95,9 +95,10 @@ static int select_game(const ScoreProfile *profile)
             (void)mvaddstr(top + 3, left, "2: 2048");
             (void)mvprintw(top + 4, left, "4x4 best: %" PRIu64, profile->best[SCORE_2048_4]);
             (void)mvprintw(top + 5, left, "6x6 best: %" PRIu64, profile->best[SCORE_2048_6]);
-            (void)mvaddstr(top + 6, left, profile->save_failed ?
+            (void)mvprintw(top + 6, left, "3:DrugWars %" PRIu64, profile->best[SCORE_DRUGWARS]);
+            (void)mvaddstr(top + 7, left, profile->save_failed ?
                           "Save failed; retry on exit" : "Personal best scores");
-            (void)mvaddstr(top + 7, left, "1/2: play  Q: quit");
+            (void)mvaddstr(top + 8, left, "1/2/3: play  Q: quit");
         } else if (rows > 0 && columns > 1) {
             (void)mvaddnstr(0, 0, "Need 32x9 - Q: quit", columns - 1);
         }
@@ -106,7 +107,7 @@ static int select_game(const ScoreProfile *profile)
         if (key == 'q' || key == 'Q' || stop_requested) {
             break;
         }
-        if (ready && was_ready && (key == '1' || key == '2')) {
+        if (ready && was_ready && (key >= '1' && key <= '3')) {
             selection = key - '0';
             break;
         }
@@ -143,7 +144,8 @@ int main(int argc, char **argv)
     const char *name = strrchr(argv[0], '/');
     name = name == NULL ? argv[0] : name + 1;
     int selection = strcmp(name, "terminal-tetris") == 0 ? 1 :
-                    strcmp(name, "terminal-2048") == 0 ? 2 : 0;
+                    strcmp(name, "terminal-2048") == 0 ? 2 :
+                    strcmp(name, "terminal-drugwars") == 0 ? 3 : 0;
     while (!stop_requested) {
         if (selection == 0) {
             selection = select_game(&profile);
@@ -156,7 +158,8 @@ int main(int argc, char **argv)
             }
         }
         const int result = selection == 1 ? tetris_run(&stop_requested, &profile) :
-                                           game2048_run(&stop_requested, &profile);
+                           selection == 2 ? game2048_run(&stop_requested, &profile) :
+                                            drugwars_run(&stop_requested, &profile);
         if (!scores_save(&profile)) {
             (void)fprintf(stderr, "Could not save scores to %s.\n", profile.path);
             if (result != SESSION_MENU) {

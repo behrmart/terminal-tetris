@@ -42,6 +42,13 @@ def run_checks():
                     terminal.output.clear()
                     terminal.send(b"1")
                     terminal.expect(b"TERMINAL TETRIS")
+                    terminal.output.clear()
+                    terminal.send(b"m")
+                    terminal.expect(b"TERMINAL GAMES")
+                    terminal.resize(25, 72)
+                    terminal.read()
+                    terminal.send(b"3")
+                    terminal.expect(b"TERMINAL DRUG WARS")
                     terminal.send(b"q")
                     terminal.finish()
                 finally:

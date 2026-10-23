@@ -22,7 +22,7 @@ class Terminal:
         self.output = bytearray()
         self.original = termios.tcgetattr(self.slave)
         self.storage = tempfile.TemporaryDirectory(prefix="terminal-games-test-")
-        is_game = Path(executable).name in ("terminal-games", "terminal-tetris", "terminal-2048")
+        is_game = Path(executable).name in ("terminal-games", "terminal-tetris", "terminal-2048", "terminal-drugwars")
         self.resize(max(rows, 9) if login and is_game else rows,
                     max(columns, 32) if login and is_game else columns, notify=False)
         env = dict(os.environ, TERM=term)

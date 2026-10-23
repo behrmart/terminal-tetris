@@ -16,7 +16,7 @@ after reaching 2048.
     make test-2048-terminal
     make run-2048
 
-The launcher links both games; their engine modules remain isolated. You can also launch ./build/terminal-2048
+The launcher links all three games; their engine modules remain isolated. You can also launch ./build/terminal-2048
 directly. At startup press 4 for 4x4, 6 for 6x6, or Enter for 4x4. To change
 board size, press M and select 2048 again.
 
@@ -485,8 +485,8 @@ Files are stored outside the build/source directories:
 - Otherwise $HOME/.local/state/terminal-games/scores/USERNAME.txt.
 
 The directory is created automatically. Each text file contains the version
-line TERMINAL-GAMES-SCORES-1 followed by three decimal lines: Tetris, 2048
-4x4, 2048 6x6. Companion .lock files coordinate concurrent instances.
+line TERMINAL-GAMES-SCORES-2 followed by four decimal lines: Tetris, 2048
+4x4, 2048 6x6, Drug Wars. Version 1 files migrate automatically on login. Companion .lock files coordinate concurrent instances.
 Writes merge maxima under a lock, then replace via a temporary file in the
 same directory. Do not edit files while a game is running.
 make clean and rebuilding packages do not delete personal scores.
@@ -507,3 +507,74 @@ never your real profile. The original make test remains engine-only.
 
 Validation for this feature is pending on Ubuntu: make clean && make,
 then make check. Make/GCC are unavailable on the Windows authoring host.
+
+## Drug Wars
+
+An original simplified terminal adaptation of the classic 30-day trading
+game, inspired by https://en.wikipedia.org/wiki/Drug_Wars_(video_game).
+No original source code or artwork is included. Select 3 at the main menu
+after login, or use make run-drugwars / ./build/terminal-drugwars.
+The combined package (make package-games) includes this game as well.
+
+Start with $2,000 cash, $5,500 debt, 100 health and 100 inventory spaces.
+Trade six goods across six districts. Prices and events are fictional
+game values, not real-world market information.
+
+| Key | Action |
+| --- | --- |
+| Up/Down or 1-6 | Select goods |
+| B / S | Buy / sell selected goods |
+| T, then 1-6 | Travel to another district |
+| P | Repay debt |
+| D / W | Deposit / withdraw cash |
+| U | Buy 50 inventory spaces for $5,000, up to 300 |
+| E | Settle the run on day 30 |
+| R | Restart with the original seed |
+| M / Q | Main menu / quit |
+| Esc | Cancel the current prompt |
+
+For buy/sell/bank/repayment prompts, type a quantity, press A for the maximum
+valid amount, or leave blank for 1, then Enter. Backspace edits. Letter
+controls accept both cases; M/Q are available from every prompt.
+
+Trading, banking, upgrades and repayments do not consume a day. Travel to a
+different district advances one day, adds 10% debt interest (rounded down),
+refreshes prices and may trigger a shortage, surplus, mugging, police
+encounter or stock find. Police encounters automatically remove a quarter
+of each carried stock (rounded up) and 10 health. Bank funds are protected
+from travel losses. This version has no guns/combat choices or extra loans.
+
+Day 30 remains playable for final trades. E, or another travel attempt,
+settles the run: cash + bank + inventory at current prices - debt, floored
+at zero. Health depletion ends the run with score zero. Only completed-run
+scores are recorded as Drug Wars personal bests. M/Q and restart abandon
+unfinished runs without recording their interim net worth.
+Cash, bank and debt are each bounded at 1,000,000,000,000 game dollars.
+Invalid transactions never change state or consume randomness.
+
+Minimum terminal: 72 columns x 25 rows. ASCII borders and monochrome
+fallback support PuTTY. Undersized terminals freeze both the game and
+pending input; M/Q still work. First recovery input is discarded.
+Scores and usernames use the shared system. Score format version 2 adds
+Drug Wars as the fourth value and automatically upgrades valid version 1
+files under the existing lock without changing their three best scores.
+Older binaries cannot read version 2 profiles; rebuild all entry points
+together. Malformed or unknown versions remain errors, never reset.
+
+Modules: include/drugwars and src/drugwars contain the deterministic game,
+input, display and host session. Only main.c reads the clock; only the host
+records scores. Drug Wars engine tests compile without ncurses or Tetris.
+
+Verification:
+    make clean && make
+    make check
+    make run-drugwars
+
+New targets: test-drugwars and test-drugwars-terminal, included in check.
+Tests cover atomic transaction rejection, capacity, money bounds, debt,
+all event types, deterministic replay, death, day-30 settlement, score
+migration, rendering/input, resize, menu navigation and signal cleanup.
+The existing package test now enters Drug Wars from the extracted binary.
+Build and test execution for this addition remain pending on Ubuntu:
+Make/GCC are unavailable on the Windows authoring host. Manual PuTTY play
+should include buying/selling, every banking prompt and finishing a run.

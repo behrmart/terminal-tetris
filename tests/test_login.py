@@ -21,7 +21,7 @@ def run_checks():
         finally:
             terminal.close()
         score_file = scores / "Alice.txt"
-        assert score_file.read_text() == "TERMINAL-GAMES-SCORES-1\n0\n0\n0\n"
+        assert score_file.read_text() == "TERMINAL-GAMES-SCORES-2\n0\n0\n0\n0\n"
         # A known saved profile verifies the visible reload without random play.
         score_file.write_text("TERMINAL-GAMES-SCORES-1\n123\n456\n789\n")
         terminal = Terminal("terminal-games", login=False, state_dir=directory)

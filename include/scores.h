@@ -4,8 +4,8 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-enum { SCORE_NAME_MAX = 16, SCORE_PATH_MAX = 4096, SCORE_MODES = 3 };
-typedef enum { SCORE_TETRIS, SCORE_2048_4, SCORE_2048_6 } ScoreMode;
+enum { SCORE_NAME_MAX = 16, SCORE_PATH_MAX = 4096, SCORE_MODES = 4 };
+typedef enum { SCORE_TETRIS, SCORE_2048_4, SCORE_2048_6, SCORE_DRUGWARS } ScoreMode;
 typedef struct {
     char username[SCORE_NAME_MAX + 1];
     char path[SCORE_PATH_MAX];

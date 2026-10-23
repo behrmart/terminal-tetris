@@ -158,8 +158,8 @@ Keep test-2048 independent of ncurses/Python. Report unexecuted Linux checks.
 
 ## Shared main menu
 src/launcher.c owns signals and calls tetris_run/game2048_run via session.h.
-The three executable names share one linked program: terminal-games starts
-at the menu, terminal-tetris/terminal-2048 start at the named game. Do not
+The four executable names share one linked program: terminal-games starts
+at the menu, terminal-tetris/terminal-2048/terminal-drugwars start at the named game. Do not
 spawn subprocesses or depend on sibling binaries for navigation.
 M/m returns SESSION_MENU after normal terminal cleanup, discarding the game.
 Q/q exits the process. Navigation is host-only, including while undersized;
@@ -181,3 +181,22 @@ Reject malformed files without overwriting them. Never lower a best score.
 Use temporary directories for tests; never touch real player data.
 Run make test-scores and make test-login (both included in make check).
 Keep make test engine-only and independent of ncurses/Python.
+
+## Drug Wars
+A third isolated engine lives in include/drugwars and src/drugwars. Keep it
+ISO C11, deterministic per seed, turn-based, and free of ncurses/clock/files.
+Use fixed arrays and Dw-prefixed types. main.c owns seeding/lifecycle;
+input/display own prompts/rendering. Preserve the existing games' mechanics.
+Trading/banking never advances time. Travel to a different district advances
+one day with 10% debt interest, fresh prices and an abstract random event.
+Day 30 permits final trades; E or travel settles. No game updates use clocks.
+Reject invalid transactions atomically without advancing random state.
+Inventory capacity is 100..300; cash/bank/debt each cap at DW_MONEY_LIMIT.
+Restart reuses the seed. Record only finished-run net worth, floored at zero;
+death scores zero, unfinished runs are not recorded.
+Menu 3 selects Drug Wars. Minimum 72x25, M/Q work while undersized, and the
+host discards recovery input. Other prompts and game state freeze.
+Score version 2 has four values (Drug Wars last); accept/migrate version 1
+with its original scores intact. Never overwrite malformed/unknown files.
+Run make test-drugwars, make test-drugwars-terminal, make test-scores and
+the full make check. Engine tests must not link ncurses or the other games.

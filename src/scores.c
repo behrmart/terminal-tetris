@@ -80,9 +80,19 @@ static bool read_scores(const char *path, uint64_t best[SCORE_MODES])
         return errno == ENOENT;
     }
     char version[32];
-    bool ok = fgets(version, sizeof(version), file) != NULL &&
-              strcmp(version, "TERMINAL-GAMES-SCORES-1\n") == 0;
-    for (unsigned int i = 0U; ok && i < SCORE_MODES; ++i) {
+    bool ok = fgets(version, sizeof(version), file) != NULL;
+    unsigned int count = 0U;
+    if (ok && strcmp(version, "TERMINAL-GAMES-SCORES-1\n") == 0) {
+        count = 3U;
+    } else if (ok && strcmp(version, "TERMINAL-GAMES-SCORES-2\n") == 0) {
+        count = SCORE_MODES;
+    } else {
+        ok = false;
+    }
+    for (unsigned int i = 0U; i < SCORE_MODES; ++i) {
+        best[i] = 0U;
+    }
+    for (unsigned int i = 0U; ok && i < count; ++i) {
         ok = read_value(file, &best[i]);
     }
     if (ok) {
@@ -164,9 +174,10 @@ bool scores_save(ScoreProfile *profile)
                 (void)close(descriptor);
                 ok = false;
             } else {
-                ok = fprintf(file, "TERMINAL-GAMES-SCORES-1\n%" PRIu64
-                             "\n%" PRIu64 "\n%" PRIu64 "\n",
-                             merged[0], merged[1], merged[2]) >= 0;
+                ok = fputs("TERMINAL-GAMES-SCORES-2\n", file) >= 0;
+                for (unsigned int i = 0U; ok && i < SCORE_MODES; ++i) {
+                    ok = fprintf(file, "%" PRIu64 "\n", merged[i]) >= 0;
+                }
                 if (fflush(file) != 0 || fsync(descriptor) != 0) {
                     ok = false;
                 }
@@ -194,7 +205,7 @@ bool scores_save(ScoreProfile *profile)
 
 void scores_record(ScoreProfile *profile, ScoreMode mode, uint64_t score)
 {
-    if (mode < SCORE_TETRIS || mode > SCORE_2048_6) {
+    if (mode < SCORE_TETRIS || mode > SCORE_DRUGWARS) {
         return;
     }
     if (score > profile->best[mode]) {

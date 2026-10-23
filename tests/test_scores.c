@@ -33,6 +33,24 @@ int main(void)
     assert(loaded.best[1] == UINT64_C(1024));
     assert(loaded.best[2] == UINT64_C(4096));
 
+    scores_record(&alice, SCORE_DRUGWARS, UINT64_C(98765));
+    assert(scores_open(&loaded, "Alice", directory));
+    assert(loaded.best[SCORE_DRUGWARS] == UINT64_C(98765));
+    /* Opening a legacy three-mode file upgrades it without losing scores. */
+    FILE *legacy = fopen(alice.path, "w");
+    assert(legacy != NULL);
+    assert(fputs("TERMINAL-GAMES-SCORES-1\n10\n20\n30\n", legacy) >= 0);
+    assert(fclose(legacy) == 0);
+    assert(scores_open(&loaded, "Alice", directory));
+    assert(loaded.best[0] == 10U && loaded.best[1] == 20U && loaded.best[2] == 30U);
+    assert(loaded.best[SCORE_DRUGWARS] == 0U);
+    legacy = fopen(alice.path, "r");
+    assert(legacy != NULL);
+    char version[32];
+    assert(fgets(version, sizeof(version), legacy) != NULL);
+    assert(strcmp(version, "TERMINAL-GAMES-SCORES-2\n") == 0);
+    assert(fclose(legacy) == 0);
+
     ScoreProfile bob;
     assert(scores_open(&bob, "Bob", directory));
     assert(bob.best[0] == 0U && bob.best[1] == 0U && bob.best[2] == 0U);
@@ -49,7 +67,7 @@ int main(void)
 
     /* Bad files must survive failed reads/saves byte-for-byte. */
     static const char *bad[] = {
-        "garbage\n", "TERMINAL-GAMES-SCORES-1\n-1\n0\n0\n",
+        "garbage\n", "TERMINAL-GAMES-SCORES-2\n1\n2\n3\n", "TERMINAL-GAMES-SCORES-1\n-1\n0\n0\n",
         "TERMINAL-GAMES-SCORES-1\n18446744073709551616\n0\n0\n",
         "TERMINAL-GAMES-SCORES-1\n1\n2\n",
         "TERMINAL-GAMES-SCORES-1\n1\n2\n3\nextra\n"

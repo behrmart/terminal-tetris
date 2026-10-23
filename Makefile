@@ -15,11 +15,13 @@ CORE_2048_SOURCES := src/game2048/board.c src/game2048/game.c
 SOURCES_2048 := src/game2048/main.c $(CORE_2048_SOURCES) src/game2048/input.c src/game2048/display.c
 OBJECTS_2048 := $(SOURCES_2048:src/%.c=$(BUILD_DIR)/%.o)
 TEST_2048_TARGETS := $(BUILD_DIR)/test-2048-game $(BUILD_DIR)/test-2048-board
+DW_SOURCES := src/drugwars/game.c src/drugwars/main.c src/drugwars/input.c src/drugwars/display.c
+DW_OBJECTS := $(DW_SOURCES:src/%.c=$(BUILD_DIR)/%.o)
 NCURSES_CFLAGS = $(shell $(PKG_CONFIG) --cflags ncurses)
 NCURSES_LIBS = $(shell $(PKG_CONFIG) --libs ncurses)
 
-.PHONY: all run debug test test-terminal package clean check-ncurses run-2048 test-2048 test-2048-terminal package-2048 test-2048-package check run-tetris test-menu package-games test-scores test-login
-all: $(TARGET_GAMES) $(TARGET) $(TARGET_2048)
+.PHONY: all run debug test test-terminal package clean check-ncurses run-2048 test-2048 test-2048-terminal package-2048 test-2048-package check run-tetris test-menu package-games test-scores test-login test-drugwars test-drugwars-terminal
+all: $(TARGET_GAMES) $(TARGET) $(TARGET_2048) $(BUILD_DIR)/terminal-drugwars
 
 check-ncurses:
 	@$(PKG_CONFIG) --exists ncurses || { echo "Install pkg-config and libncurses-dev."; exit 1; }
@@ -30,8 +32,8 @@ $(BUILD_DIR):
 $(BUILD_DIR)/%.o: src/%.c | $(BUILD_DIR) check-ncurses
 	$(CC) $(CPPFLAGS) $(NCURSES_CFLAGS) $(CFLAGS) -MMD -MP -c $< -o $@
 
-$(TARGET_GAMES): $(OBJECTS) $(OBJECTS_2048) $(BUILD_DIR)/launcher.o $(BUILD_DIR)/scores.o | check-ncurses
-	$(CC) $(LDFLAGS) $(OBJECTS) $(OBJECTS_2048) $(BUILD_DIR)/launcher.o $(BUILD_DIR)/scores.o $(NCURSES_LIBS) $(LDLIBS) -o $@
+$(TARGET_GAMES): $(OBJECTS) $(OBJECTS_2048) $(DW_OBJECTS) $(BUILD_DIR)/launcher.o $(BUILD_DIR)/scores.o | check-ncurses
+	$(CC) $(LDFLAGS) $(OBJECTS) $(OBJECTS_2048) $(DW_OBJECTS) $(BUILD_DIR)/launcher.o $(BUILD_DIR)/scores.o $(NCURSES_LIBS) $(LDLIBS) -o $@
 
 $(TARGET): $(TARGET_GAMES)
 	cp $< $@
@@ -88,10 +90,10 @@ test: $(TEST_TARGETS)
 clean:
 	rm -rf $(BUILD_DIR)
 
--include $(OBJECTS:.o=.d) $(OBJECTS_2048:.o=.d) $(BUILD_DIR)/launcher.d $(BUILD_DIR)/scores.d
+-include $(OBJECTS:.o=.d) $(OBJECTS_2048:.o=.d) $(BUILD_DIR)/launcher.d $(BUILD_DIR)/scores.d $(DW_OBJECTS:.o=.d)
 
 # Complete regression suite including the extracted 2048 package.
-check: test test-2048 test-terminal test-2048-terminal test-2048-package test-menu test-scores test-login
+check: test test-2048 test-terminal test-2048-terminal test-2048-package test-menu test-scores test-login test-drugwars test-drugwars-terminal
 
 package-2048: $(TARGET_2048) packaging/README-2048.txt
 	install -d $(BUILD_DIR)/package/terminal-2048
@@ -119,3 +121,26 @@ test-scores: $(BUILD_DIR)/test-scores
 
 test-login: all
 	python3 tests/test_login.py
+
+.PHONY: run-drugwars
+$(BUILD_DIR)/drugwars/%.o: src/drugwars/%.c | check-ncurses
+	mkdir -p $(@D)
+	$(CC) $(CPPFLAGS) $(NCURSES_CFLAGS) $(CFLAGS) -MMD -MP -c $< -o $@
+
+$(BUILD_DIR)/terminal-drugwars: $(TARGET_GAMES)
+	cp $< $@
+
+run-drugwars: $(BUILD_DIR)/terminal-drugwars
+	./$(BUILD_DIR)/terminal-drugwars
+
+$(BUILD_DIR)/test-drugwars: tests/test_drugwars.c src/drugwars/game.c include/drugwars/game.h | $(BUILD_DIR)
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) tests/test_drugwars.c src/drugwars/game.c $(LDLIBS) -o $@
+
+test-drugwars: $(BUILD_DIR)/test-drugwars
+	./$(BUILD_DIR)/test-drugwars
+
+$(BUILD_DIR)/test-drugwars-terminal: tests/test_drugwars_terminal.c src/drugwars/display.c src/drugwars/input.c src/drugwars/game.c src/display.c $(CORE_SOURCES) $(wildcard include/drugwars/*.h) | $(BUILD_DIR) check-ncurses
+	$(CC) $(CPPFLAGS) $(NCURSES_CFLAGS) $(CFLAGS) $(LDFLAGS) tests/test_drugwars_terminal.c src/drugwars/display.c src/drugwars/input.c src/drugwars/game.c src/display.c $(CORE_SOURCES) $(NCURSES_LIBS) $(LDLIBS) -o $@
+
+test-drugwars-terminal: all $(BUILD_DIR)/test-drugwars-terminal
+	python3 tests/test_drugwars_terminal.py
